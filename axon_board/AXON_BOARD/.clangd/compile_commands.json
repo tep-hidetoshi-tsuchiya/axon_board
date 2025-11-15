@@ -1,0 +1,102 @@
+[
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/axon_routine.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/driver/UART.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/driver/dma/DMAMSPM0.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/driver/uart/UARTMSPM0.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/driver/utils/List.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/driver/utils/RingBuf.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/driver/utils/StructRingBuf.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/driver_config.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/isr.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/main.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/peripheral/fram_memory_map.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/peripheral/msp_peripheral_config.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/protcol/src/s2a_client.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/protcol/src/t2s_packet.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/protcol/src/target.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -xc++",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/protcol/test/UnitTest01.cpp"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/soma_routine.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/startup_mspm0g350x_ticlang.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/ti_msp_dl_config.c"
+   },
+   {
+      "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD",
+      "command"   : "clang++ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/AXON_BOARD/syscfg\" -std=c18 -xc",
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board/src/uart_packet.c"
+   }
+]
