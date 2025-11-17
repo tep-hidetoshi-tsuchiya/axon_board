@@ -410,7 +410,7 @@ void SYSCFG_DL_GPIO_init(void) {
 #endif /*SOMA_BOARD*/
 
 #ifdef AXON_BOARD
-    // 3色LED
+    // 3色LED (R,G,B: PWM)
     DL_GPIO_initPeripheralOutputFunctionFeatures(LED_R_IOMUX, LED_R_PWM, DL_GPIO_INVERSION_DISABLE,
                                                  DL_GPIO_RESISTOR_NONE, DL_GPIO_DRIVE_STRENGTH_LOW,
                                                  DL_GPIO_HIZ_DISABLE);

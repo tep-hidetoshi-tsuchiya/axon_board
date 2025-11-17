@@ -15,6 +15,7 @@ C_SRCS += \
 C:/ti/mspm0_sdk_2_06_00_05/source/ti/devices/msp/m0p/startup_system_files/ticlang/startup_mspm0g350x_ticlang.c \
 ../isr.c \
 ../main.c \
+../soma_uart_test.c \
 ../startup_mspm0g350x_ticlang.c \
 ../ti_msp_dl_config.c \
 ../uart_packet.c 
@@ -34,6 +35,7 @@ C_DEPS += \
 ./startup_mspm0g350x_ticlang.d \
 ./isr.d \
 ./main.d \
+./soma_uart_test.d \
 ./startup_mspm0g350x_ticlang.d \
 ./ti_msp_dl_config.d \
 ./uart_packet.d 
@@ -48,6 +50,7 @@ OBJS += \
 ./startup_mspm0g350x_ticlang.o \
 ./isr.o \
 ./main.o \
+./soma_uart_test.o \
 ./uart_packet.o 
 
 GEN_MISC_FILES += \
@@ -62,6 +65,7 @@ OBJS__QUOTED += \
 "startup_mspm0g350x_ticlang.o" \
 "isr.o" \
 "main.o" \
+"soma_uart_test.o" \
 "uart_packet.o" 
 
 GEN_MISC_FILES__QUOTED += \
@@ -76,6 +80,7 @@ C_DEPS__QUOTED += \
 "startup_mspm0g350x_ticlang.d" \
 "isr.d" \
 "main.d" \
+"soma_uart_test.d" \
 "startup_mspm0g350x_ticlang.d" \
 "ti_msp_dl_config.d" \
 "uart_packet.d" 
@@ -92,6 +97,7 @@ C_SRCS__QUOTED += \
 "C:/ti/mspm0_sdk_2_06_00_05/source/ti/devices/msp/m0p/startup_system_files/ticlang/startup_mspm0g350x_ticlang.c" \
 "../isr.c" \
 "../main.c" \
+"../soma_uart_test.c" \
 "../startup_mspm0g350x_ticlang.c" \
 "../ti_msp_dl_config.c" \
 "../uart_packet.c" 

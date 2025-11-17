@@ -5,6 +5,7 @@
 #include "isr.h"
 #include "peripheral/fram_utils.h"
 #include "event.h"
+#include "soma_uart_test.h"
 
 systick_t     g_systick_count = 0U;
 uart_status_t g_uart_status   = {0};
@@ -220,8 +221,78 @@ void GROUP1_IRQHandler(void) {
 }
 
 void UART0_IRQHandler(void) {
+#ifdef AXON_BOARD
+    // SOMA UARTテスト用: 36バイトフレーム受信処理
+    uint32_t iidx = DL_UART_getPendingInterrupt(S2A_UART_INST);
+    
+    // 割り込みインデックスで判定（ビットマスクではなくインデックス値）
+    if (iidx == DL_UART_IIDX_RX) {
+        // ★修正: 1割り込み = 1バイト処理（whileループ削除）
+        // FIFO threshold = 1バイトに設定しているため、whileループは不要
+        
+        // FIFOチェック（念のため）
+        if (DL_UART_isRXFIFOEmpty(S2A_UART_INST)) {
+            return;  // データなし（通常は発生しない）
+        }
+        
+        uint8_t b = DL_UART_receiveData(S2A_UART_INST);
+        
+        // デバッグ: 受信バイトカウント
+        debug_rx_count++;
+        debug_last_byte = b;
+        
+        // フレーム同期: 2バイトヘッダー(0x14 0x20)を確実に検出
+        if (rx_index == 0) {
+            // 1バイト目: 0x14でなければ破棄して次の割り込みを待つ
+            if (b == 0x14) {
+                rx_frame[rx_index++] = b;
+                debug_rx_index = rx_index;
+            }
+            // 0x14以外は何もせず破棄（次の割り込みでまたrx_index==0から再試行）
+        } else if (rx_index == 1) {
+            // 2バイト目: 値を記録（デバッグ用）
+            debug_byte1 = b;
+            
+            // 2バイト目: 0x20でなければリセット
+            if (b == 0x20) {
+                // 正しいヘッダー2バイト目
+                rx_frame[rx_index++] = b;
+                debug_rx_index = rx_index;
+            } else {
+                // ヘッダー不一致 → リセット
+                debug_byte1_ng_count++;
+                debug_sync_reset_count++;
+                rx_index = 0;
+                debug_rx_index = rx_index;
+                
+                // ★修正: 受信したバイトが0x14なら次のフレームの先頭として保存
+                if (b == 0x14) {
+                    rx_frame[rx_index++] = b;
+                    debug_rx_index = rx_index;
+                }
+            }
+        } else {
+            // 3バイト目以降: 通常受信
+            rx_frame[rx_index++] = b;
+            debug_rx_index = rx_index;
+            
+            // 36バイト受信完了
+            if (rx_index >= AXON_FRAME_SIZE) {
+                debug_complete_count++;
+                frame_received = 1;
+                rx_index = 0;
+                debug_rx_index = rx_index;
+            }
+        }
+    }
+#else
+    // SOMA_BOARD用の既存UART処理
     UARTMSP_interruptHandler((UART_Handle)&UART_config[0]);
+#endif
 }
+
+
+
 
 void UART2_IRQHandler(void) {
 #if CONFIG_UART_COUNT > 1

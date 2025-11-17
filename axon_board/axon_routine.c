@@ -14,6 +14,7 @@
 #include "peripheral/msp_peripheral_config.h"
 #include "uart_packet.h"
 #include "event.h"
+#include "soma_uart_test.h"
 
 #define POLLING_INTERVAL_MS (500U)
 #define SWITCH_DEBOUNCE_US  (50U)
@@ -139,6 +140,7 @@ static inline void _set_segment_led(GPIO_Regs* gpio, uint32_t segment_mask, cons
             break;
         case 9:
             seg_bits = 0b01101111;
+            break;
         default:
             break;
     }
@@ -197,6 +199,10 @@ void axon_routine_main(void* args) {
             __WFI();
         }
     }
+
+    // SOMA UARTテスト初期化（UART開設後に実施）
+    // 既存のUART設定を上書きして、SOMA通信用に再設定
+    soma_uart_init();
 
     // ==========================================
     // RGB色フェード設定
@@ -316,6 +322,12 @@ void axon_routine_main(void* args) {
         _set_segment_leds(axon_state.left_amount, axon_state.right_amount);
 
         // ==========================================
+        // SOMA UARTテスト: フレームチェック
+        // ==========================================
+        soma_check_frame();
+
+#ifndef AXON_BOARD  // SOMA UARTテスト中は既存UART処理を無効化
+        // ==========================================
         // UART受信処理
         // ==========================================
         status = receive_uart_s2a_packet(&s2a_packet);
@@ -423,6 +435,7 @@ void axon_routine_main(void* args) {
             _change_status(&axon_state, STATE_NOTIFY);
             DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, UART_IRQ_OUT_PIN);
         }
+#endif  // AXON_BOARD (SOMA UARTテスト中は既存UART処理を無効化)
 
 
         // ==========================================

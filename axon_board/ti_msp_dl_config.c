@@ -99,6 +99,7 @@ SYSCONFIG_WEAK void SYSCFG_DL_initPower(void) {
 }
 
 SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void) {
+    // GPIO初期化はmsp_peripheral_config.cで実施
 }
 
 #ifdef MSPM0G_CPU_FREQ_80MHZ

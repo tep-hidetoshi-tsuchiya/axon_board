@@ -89,7 +89,7 @@ isr.o: ../isr.c ../driver_config.h \
  C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/driver/utils/RingBuf.h \
  C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/driver/UART.h \
  ../peripheral/msp_peripheral_config.h ../isr.h \
- ../peripheral/fram_utils.h ../event.h
+ ../peripheral/fram_utils.h ../event.h ../soma_uart_test.h
 ../driver_config.h:
 C:/ti/mspm0_sdk_2_06_00_05/source/ti/devices/msp/msp.h:
 C:/ti/mspm0_sdk_2_06_00_05/source/ti/devices/DeviceFamily.h:
@@ -185,3 +185,4 @@ C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/driver/UART.h:
 ../isr.h:
 ../peripheral/fram_utils.h:
 ../event.h:
+../soma_uart_test.h:

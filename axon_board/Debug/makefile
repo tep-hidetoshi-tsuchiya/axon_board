@@ -16,6 +16,7 @@ ORDERED_OBJS += \
 "./startup_mspm0g350x_ticlang.o" \
 "./isr.o" \
 "./main.o" \
+"./soma_uart_test.o" \
 "./uart_packet.o" \
 "./driver/UART.o" \
 "./driver/dma/DMAMSPM0.o" \
@@ -165,15 +166,15 @@ all: $(OBJS) $(GEN_CMDS)
 axon_board.out: $(OBJS) $(GEN_CMDS)
 	@echo 'Building target: "$@"'
 	@echo 'Invoking: Arm Linker'
-	"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/bin/tiarmclang.exe" @"device.opt"  -march=thumbv6m -mcpu=cortex-m0plus -mfloat-abi=soft -mlittle-endian -mthumb -O2 -DAXON_BOARD -gdwarf-3 -Wl,-m"axon_board.map" -Wl,-i"C:/ti/mspm0_sdk_2_06_00_05/source" -Wl,-i"C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board" -Wl,-i"C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/Debug/syscfg" -Wl,-i"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib" -Wl,--diag_wrap=off -Wl,--display_error_number -Wl,--warn_sections -Wl,--xml_link_info="axon_board_linkInfo.xml" -Wl,--rom_model -o "axon_board.out" $(ORDERED_OBJS)
+	"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/bin/tiarmclang.exe" @"device.opt"  -march=thumbv6m -mcpu=cortex-m0plus -mfloat-abi=soft -mlittle-endian -mthumb -O0 -DAXON_BOARD -gdwarf-3 -Wl,-m"axon_board.map" -Wl,-i"C:/ti/mspm0_sdk_2_06_00_05/source" -Wl,-i"C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board" -Wl,-i"C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/Debug/syscfg" -Wl,-i"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib" -Wl,--diag_wrap=off -Wl,--display_error_number -Wl,--warn_sections -Wl,--xml_link_info="axon_board_linkInfo.xml" -Wl,--rom_model -o "axon_board.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: "$@"'
 	@echo ' '
 
 # Other Targets
 clean:
 	-$(RM) $(GEN_MISC_FILES__QUOTED)$(GEN_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "axon_routine.o" "driver_config.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "isr.o" "main.o" "uart_packet.o" "driver\UART.o" "driver\dma\DMAMSPM0.o" "driver\uart\UARTMSPM0.o" "driver\utils\List.o" "driver\utils\RingBuf.o" "driver\utils\StructRingBuf.o" "peripheral\fram_memory_map.o" "peripheral\msp_peripheral_config.o" "protcol\src\s2a_client.o" "protcol\src\t2s_packet.o" "protcol\src\target.o" 
-	-$(RM) "axon_routine.d" "driver_config.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "isr.d" "main.d" "startup_mspm0g350x_ticlang.d" "ti_msp_dl_config.d" "uart_packet.d" "driver\UART.d" "driver\dma\DMAMSPM0.d" "driver\uart\UARTMSPM0.d" "driver\utils\List.d" "driver\utils\RingBuf.d" "driver\utils\StructRingBuf.d" "peripheral\fram_memory_map.d" "peripheral\msp_peripheral_config.d" "protcol\src\s2a_client.d" "protcol\src\t2s_packet.d" "protcol\src\target.d" 
+	-$(RM) "axon_routine.o" "driver_config.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "isr.o" "main.o" "soma_uart_test.o" "uart_packet.o" "driver\UART.o" "driver\dma\DMAMSPM0.o" "driver\uart\UARTMSPM0.o" "driver\utils\List.o" "driver\utils\RingBuf.o" "driver\utils\StructRingBuf.o" "peripheral\fram_memory_map.o" "peripheral\msp_peripheral_config.o" "protcol\src\s2a_client.o" "protcol\src\t2s_packet.o" "protcol\src\target.o" 
+	-$(RM) "axon_routine.d" "driver_config.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "isr.d" "main.d" "soma_uart_test.d" "startup_mspm0g350x_ticlang.d" "ti_msp_dl_config.d" "uart_packet.d" "driver\UART.d" "driver\dma\DMAMSPM0.d" "driver\uart\UARTMSPM0.d" "driver\utils\List.d" "driver\utils\RingBuf.d" "driver\utils\StructRingBuf.d" "peripheral\fram_memory_map.d" "peripheral\msp_peripheral_config.d" "protcol\src\s2a_client.d" "protcol\src\t2s_packet.d" "protcol\src\target.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

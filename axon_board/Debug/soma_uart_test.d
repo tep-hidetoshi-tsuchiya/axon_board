@@ -1,6 +1,7 @@
 # FIXED
 
-axon_routine.o: ../axon_routine.c ../ti_msp_dl_config.h \
+soma_uart_test.o: ../soma_uart_test.c ../soma_uart_test.h \
+ ../ti_msp_dl_config.h \
  C:/ti/mspm0_sdk_2_06_00_05/source/ti/devices/msp/msp.h \
  C:/ti/mspm0_sdk_2_06_00_05/source/ti/devices/DeviceFamily.h \
  C:/ti/mspm0_sdk_2_06_00_05/source/ti/devices/msp/m0p/mspm0g350x.h \
@@ -89,8 +90,8 @@ axon_routine.o: ../axon_routine.c ../ti_msp_dl_config.h \
  C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/driver/dma/DMAMSPM0.h \
  C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/driver/utils/RingBuf.h \
  C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/driver/UART.h \
- ../peripheral/msp_peripheral_config.h ../peripheral/led_utils.h \
- ../uart_packet.h ../event.h ../soma_uart_test.h
+ ../peripheral/msp_peripheral_config.h
+../soma_uart_test.h:
 ../ti_msp_dl_config.h:
 C:/ti/mspm0_sdk_2_06_00_05/source/ti/devices/msp/msp.h:
 C:/ti/mspm0_sdk_2_06_00_05/source/ti/devices/DeviceFamily.h:
@@ -184,7 +185,3 @@ C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/driver/dma/DMAMSPM0
 C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/driver/utils/RingBuf.h:
 C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/driver/UART.h:
 ../peripheral/msp_peripheral_config.h:
-../peripheral/led_utils.h:
-../uart_packet.h:
-../event.h:
-../soma_uart_test.h:

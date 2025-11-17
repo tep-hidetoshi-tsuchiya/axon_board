@@ -55,22 +55,22 @@
 #endif
 
 // 共通ピン定義
-// RGB_LED
+// RGB_LED (PB0=R[47pin/PINCM12], PB1=G[48pin/PINCM13], PB2=B[50pin/PINCM15])
 
 #define LED_RGB_PORT                                            (GPIOB)
 #define LED_RG_TIM_INST                                         (TIMA1)
 #define LED_RG_TIM_IRQ_INST                                     (TIMA1_INT_IRQn)
 #define LED_RG_TIM_IRQ_HANDLER                                  (TIMA1_IRQHandler)
-#define LED_R_IOMUX                                             (IOMUX_PINCM12)
+#define LED_R_IOMUX                                             (IOMUX_PINCM12)  // PB0 47pin
 #define LED_R_PWM                                               (IOMUX_PINCM12_PF_TIMA1_CCP0)
 #define LED_R_PIN                                               (DL_GPIO_PIN_0)
-#define LED_G_IOMUX                                             (IOMUX_PINCM13)
+#define LED_G_IOMUX                                             (IOMUX_PINCM13)  // PB1 48pin
 #define LED_G_PWM                                               (IOMUX_PINCM13_PF_TIMA1_CCP1)
 #define LED_G_PIN                                               (DL_GPIO_PIN_1)
 #define LED_B_TIM_INST                                          (TIMG6)
 #define LED_B_TIM_IRQ_INST                                      (TIMG6_INT_IRQn)
 #define LED_B_TIM_IRQ_HANDLER                                   (TIMG6_IRQHandler)
-#define LED_B_IOMUX                                             (IOMUX_PINCM15)
+#define LED_B_IOMUX                                             (IOMUX_PINCM15)  // PB2 50pin
 #define LED_B_PWM                                               (IOMUX_PINCM15_PF_TIMG6_CCP0)
 #define LED_B_PIN                                               (DL_GPIO_PIN_2)
 
