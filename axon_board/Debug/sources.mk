@@ -131,5 +131,5 @@ driver/dma \
 driver/uart \
 driver/utils \
 peripheral \
-protcol/src \
+protocol/src \
 

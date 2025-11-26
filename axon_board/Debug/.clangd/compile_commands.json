@@ -102,17 +102,17 @@
    {
       "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/Debug",
       "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/Debug\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -xc",
-      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/protcol/src/s2a_client.c"
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/protocol/src/s2a_client.c"
    },
    {
       "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/Debug",
       "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/Debug\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -xc",
-      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/protcol/src/t2s_packet.c"
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/protocol/src/s2a_packet.c"
    },
    {
       "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/Debug",
       "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board\" -I\"C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/Debug\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source/third_party/CMSIS/Core/Include\" -I\"C:/ti/mspm0_sdk_2_06_00_05/source\" -DAXON_BOARD -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c++/v1\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/lib/clang/18/include\" -isystem\"C:/ti/ccs2030/ccs/tools/compiler/ti-cgt-armllvm_4.0.3.LTS/include/c\" -xc",
-      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/protcol/src/target.c"
+      "file"      : "C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/protocol/src/target.c"
    },
    {
       "directory" : "C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/Debug",

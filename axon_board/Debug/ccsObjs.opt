@@ -18,9 +18,9 @@
 "./driver/utils/StructRingBuf.o"
 "./peripheral/fram_memory_map.o"
 "./peripheral/msp_peripheral_config.o"
-"./protcol/src/s2a_client.o"
-"./protcol/src/t2s_packet.o"
-"./protcol/src/target.o"
+"./protocol/src/s2a_client.o"
+"./protocol/src/s2a_packet.o"
+"./protocol/src/target.o"
 -l"./device_linker.cmd"
 -ldevice.cmd.genlibs
 -llibc.a

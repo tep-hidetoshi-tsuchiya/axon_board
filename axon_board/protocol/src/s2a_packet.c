@@ -10,7 +10,7 @@
 #include "../../peripheral/hw_ver_utils.h"
 #include "../../event.h"
 #include "../../axon_status.h"  // AXON status structure and functions
-#include "../../driver/utils/tiny_aes.h"  // Software AES (MSPM0 DECRYPT bug workaround)
+// #include "../../driver/utils/tiny_aes.h"  // Software AES (MSPM0 DECRYPT bug workaround) - NOT NEEDED for AXON
 #include "../../soma_axon_comm_test.h"  // Test mode functions
 // External UART send function (implemented in soma_uart_test.c)
 extern bool uart_send_packet(const uint8_t* data, size_t len);
@@ -429,19 +429,18 @@ static bool aes_decrypt_cbc(const uint8_t* encrypted_data, uint8_t* decrypted_da
 {
     if (!encrypted_data || !decrypted_data) return false;
 
-    // MSPM0 AES DECRYPT HARDWARE BUG WORKAROUND
-    // MSPM0G3507のハードウェアAES復号にバグがあるため、
-    // TinyAES-Cによるソフトウェア実装を使用
-    
-    uint8_t temp_buffer[32];
-    memcpy(temp_buffer, encrypted_data, 32);
-    
-    struct AES_ctx ctx;
-    AES_init_ctx_iv(&ctx, aes_key, (uint8_t*)aes_iv);
-    AES_CBC_decrypt_buffer(&ctx, temp_buffer, 32);
-    
-    memcpy(decrypted_data, temp_buffer, 32);
+    // AXON側ではAES復号は不要（平文通信）
+    // SOMAから送信されるデータは既に平文化されている
+    memcpy(decrypted_data, encrypted_data, 32);
     return true;
+    
+    // 以下、TinyAES-C実装（現在は不要のためコメントアウト）
+    // uint8_t temp_buffer[32];
+    // memcpy(temp_buffer, encrypted_data, 32);
+    // struct AES_ctx ctx;
+    // AES_init_ctx_iv(&ctx, aes_key, (uint8_t*)aes_iv);
+    // AES_CBC_decrypt_buffer(&ctx, temp_buffer, 32);
+    // memcpy(decrypted_data, temp_buffer, 32);
 }
 
 /**

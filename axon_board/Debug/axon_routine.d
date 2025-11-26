@@ -90,7 +90,8 @@ axon_routine.o: ../axon_routine.c ../ti_msp_dl_config.h \
  C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/driver/utils/RingBuf.h \
  C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/driver/UART.h \
  ../peripheral/msp_peripheral_config.h ../peripheral/led_utils.h \
- ../uart_packet.h ../event.h ../soma_uart_test.h
+ ../uart_packet.h ../event.h ../soma_uart_test.h \
+ ../protocol/src/s2a_packet.h ../protocol/src/types.h
 ../ti_msp_dl_config.h:
 C:/ti/mspm0_sdk_2_06_00_05/source/ti/devices/msp/msp.h:
 C:/ti/mspm0_sdk_2_06_00_05/source/ti/devices/DeviceFamily.h:
@@ -188,3 +189,5 @@ C:/DATA/DEVELOP/Git/capsule_toy_control_board_CCS/axon_board/driver/UART.h:
 ../uart_packet.h:
 ../event.h:
 ../soma_uart_test.h:
+../protocol/src/s2a_packet.h:
+../protocol/src/types.h:
