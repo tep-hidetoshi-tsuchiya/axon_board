@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 #if defined(AXON_BOARD)
 #include "ti_msp_dl_config.h"
@@ -159,6 +160,10 @@ static void clear_irq_signal(void);  // IRQ信号クリア（High設定）
 static const uint8_t axon_serial_number[6] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05};
 static const uint8_t axon_fw_version = 0x10;  // FW Version 1.0 (bit[7:4]=Major, bit[3:0]=Minor)
 static const uint8_t axon_fw_min_version = 0x10;  // 最小要求FWバージョン
+
+// FW更新用グローバル変数
+static uint32_t g_fw_total_crc = 0;      // 受信したFWコード全体のCRC累積
+static uint32_t g_fw_last_address = 0;   // 最後に受信したアドレス
 
 /**
  * @brief DIC値を生成（シリアル番号ベース）
@@ -933,10 +938,6 @@ bool axon_handle_afwup(const uint8_t* encrypted_frame)
     // 7. ACK応答送信
     return send_ack_frame();
 }
-
-// FW更新用グローバル変数
-static uint32_t g_fw_total_crc = 0;      // 受信したFWコード全体のCRC累積
-static uint32_t g_fw_last_address = 0;   // 最後に受信したアドレス
 
 /**
  * @brief CODEPKT受信時の処理（AXON側）
