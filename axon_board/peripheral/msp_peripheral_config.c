@@ -127,6 +127,7 @@ static void _msp_peripheral_gpio_init_for_dipsw(void);
 static void _msp_peripheral_gpio_init_for_hw_ver(void);
 static void _msp_peripheral_pwm_init(void);
 static void _msp_peripheral_tim_init(void);
+static void _msp_peripheral_uart_init(void);
 static void _msp_peripheral_spi_init(void);
 
 static void _msp_peripheral_gpio_init_for_dipsw(void) {
@@ -202,6 +203,59 @@ static void _msp_peripheral_tim_init(void) {
     DL_TimerG_enableClock(DEBOUNCE_TIM_INST);
 }
 
+static void _msp_peripheral_uart_init(void) {
+#ifdef AXON_BOARD
+    // ★デバッグ: 関数呼び出し確認
+    volatile uint32_t debug_marker = 0xDEADBEEF;
+    
+    // ★修正完了: TI標準UART0アドレス使用（MSPM0G3507データシートTable 3-1準拠）
+    UART_Regs *uart0 = (UART_Regs *)0x40108000UL;
+    
+    // ★最重要: GPIO ピン設定を最初に実行（TIドライバと同じ順序）
+    DL_GPIO_initPeripheralOutputFunction(IOMUX_PINCM21, IOMUX_PINCM21_PF_UART0_TX);
+    DL_GPIO_initPeripheralInputFunction(IOMUX_PINCM22, IOMUX_PINCM22_PF_UART0_RX);
+    
+    // Power ON (SYSCFG_DL_initPowerでもやっているが確実に実行)
+    DL_UART_reset(uart0);
+    DL_UART_enablePower(uart0);
+    
+    // Clock 32MHz SYSOSC
+    DL_UART_ClockConfig clk = {
+        .clockSel    = DL_UART_CLOCK_BUSCLK,
+        .divideRatio = DL_UART_CLOCK_DIVIDE_RATIO_1
+    };
+    DL_UART_setClockConfig(uart0, &clk);
+    
+    // UARTモード設定
+    DL_UART_Config cfg = {
+        .mode        = DL_UART_MODE_NORMAL,
+        .direction   = DL_UART_DIRECTION_TX_RX,
+        .flowControl = DL_UART_FLOW_CONTROL_NONE,
+        .parity      = DL_UART_PARITY_NONE,
+        .wordLength  = DL_UART_WORD_LENGTH_8_BITS,
+        .stopBits    = DL_UART_STOP_BITS_ONE
+    };
+    DL_UART_init(uart0, &cfg);
+    
+    // Baudrate 115200 @ 32MHz (SYSOSC 32MHz)
+    DL_UART_configBaudRate(uart0, 32000000, 115200);
+    
+    // FIFO enable
+    DL_UART_enableFIFOs(uart0);
+    DL_UART_setRXFIFOThreshold(uart0, DL_UART_RX_FIFO_LEVEL_ONE_ENTRY);
+    DL_UART_setTXFIFOThreshold(uart0, DL_UART_TX_FIFO_LEVEL_EMPTY);
+    
+    // 割り込み
+    DL_UART_enableInterrupt(uart0, DL_UART_INTERRUPT_RX);
+    NVIC_EnableIRQ(UART0_INT_IRQn);
+    
+    // ★最重要: UARTを有効化（これが無いと絶対動かない）
+    DL_UART_enable(uart0);
+    
+    // ★デバッグ: 初期化完了マーカー
+    debug_marker = 0xCAFEBABE;
+#endif
+}
 
 static void _msp_peripheral_spi_init(void) {
 #ifdef SOMA_BOARD
@@ -234,13 +288,24 @@ static void _msp_peripheral_spi_init(void) {
 
 // overwrite
 void SYSCFG_DL_init(void) {
-    SYSCFG_DL_initPower();
-    SYSCFG_DL_GPIO_init();
-    /* Module-Specific Initializations*/
+    // ★重要: クロック設定を最初に実行(ペリフェラル初期化の前提条件)
     SYSCFG_DL_SYSCTL_init();
+    
+    // ペリフェラル電源制御
+    SYSCFG_DL_initPower();
+    
+    // GPIO初期化（UART以外のペリフェラル用）
+    // 注意: UART0ピン設定はここではなく_msp_peripheral_uart_init()内で実行
+    SYSCFG_DL_GPIO_init();
+    
+    /* Module-Specific Initializations*/
     _msp_peripheral_pwm_init();
-    // _msp_peripheral_uart_init();
     _msp_peripheral_spi_init();
+    
+    // ★重要: UART初期化はGPIO初期化の後、他のペリフェラルの後に実行
+    // GPIO初期化でピン設定が上書きされるのを防ぐため、最後に実行
+    _msp_peripheral_uart_init();
+    
     // _msp_peripheral_dma_init();
     SYSCFG_DL_AES_init();
     SYSCFG_DL_CRC_init();
@@ -262,7 +327,8 @@ void SYSCFG_DL_initPower(void) {
     DL_SPI_reset(FRAM_SPI_INST);
 #endif
 #ifdef AXON_BOARD
-    DL_UART_reset(UART_INST);
+    // ★修正完了: TI標準UART0アドレス使用（MSPM0G3507データシートTable 3-1準拠）
+    DL_UART_reset((UART_Regs *)0x40108000UL);
 #endif
 
     DL_AES_reset(AES);
@@ -281,7 +347,8 @@ void SYSCFG_DL_initPower(void) {
     DL_SPI_enablePower(FRAM_SPI_INST);
 #endif
 #ifdef AXON_BOARD
-    DL_UART_enablePower(UART_INST);
+    // ★修正完了: TI標準UART0アドレス使用（MSPM0G3507データシートTable 3-1準拠）
+    DL_UART_enablePower((UART_Regs *)0x40108000UL);
 #endif
 
     DL_AES_enablePower(AES);
@@ -519,7 +586,10 @@ void SYSCFG_DL_GPIO_init(void) {
     DL_GPIO_clearInterruptStatus(PUSH_SW_PORT, PUSH_SW1_PIN | PUSH_SW2_PIN);
     DL_GPIO_enableInterrupt(PUSH_SW_PORT, PUSH_SW1_PIN | PUSH_SW2_PIN);
 
-    // UART
+    // 注意: UART0 (PA10/PA11) のピン設定は _msp_peripheral_uart_init() 内で実施
+    // ここでは設定しない（UART初期化の直前に設定することで上書き防止）
+
+    // UART (追加のUART - UART2相当)
     DL_GPIO_initPeripheralOutputFunction(UART_TX_IOMUX, UART_TX_PF_FUNC);
     DL_GPIO_initPeripheralInputFunction(UART_RX_IOMUX, UART_RX_PF_FUNC);
 

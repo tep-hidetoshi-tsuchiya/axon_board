@@ -193,6 +193,48 @@ void axon_routine_main(void* args) {
     uint8_t           notified_inc  = 0;
     systick_t                last_led_update    = 0;  // LED更新用の最終時刻
 
+    // ========== UARTループバックテスト実行 ==========
+    // PA10-PA11をショート接続してからテスト実行
+    // 注意: UART初期化はSYSCFG_DL_init()内の_msp_peripheral_uart_init()で完了済み
+    // soma_uart_init()は呼ばない（SOMA側用の設定であり、AXON_BOARDのUART0と互換性なし）
+    #if 1  // ループバックテストを有効化する場合は #if 1 に変更
+    {
+        bool loopback_result = axon_uart_loopback_test();
+        if (!loopback_result) {
+            // テスト失敗時は赤LED点灯して停止
+            DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_0);  // RED LED ON
+            printf("AXON UART Loopback Test FAILED!\n");
+            while (1) {
+                __WFI();
+            }
+        }
+        printf("AXON UART Loopback Test PASSED!\n");
+        // テスト成功 - 緑LED点灯後、通常動作へ移行
+        DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_1);  // GREEN LED ON
+        delay_cycles(32000000);  // 1秒待機
+        DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_1);  // GREEN LED OFF
+        delay_cycles(CPUCLK_FREQ / 2);  // 0.5秒待機
+        
+        // 36バイトフレーム完全検証テスト（CRC・フレーム同期・ISR処理）
+        printf("\n--- Starting 36-byte Frame Test ---\n");
+        if (!axon_36byte_frame_test()) {
+            // テスト失敗 - 赤LED点滅
+            printf("36-byte Frame Test FAILED!\n");
+            while (1) {
+                DL_GPIO_togglePins(GPIOB, DL_GPIO_PIN_0);  // RED LED blink
+                delay_cycles(16000000);  // 0.5秒
+            }
+        }
+        printf("36-byte Frame Test PASSED!\n");
+        // テスト成功 - 青LED点灯後、通常動作へ移行
+        DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_2);  // BLUE LED ON
+        delay_cycles(32000000);  // 1秒待機
+        DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_2);  // BLUE LED OFF
+        delay_cycles(CPUCLK_FREQ / 2);  // 0.5秒待機
+    }
+    #endif
+    
+    
     uart_packet_status_t status = init_uart_ports();
     if (status != UART_PACKET_STATUS_SUCCESS) {
         while (1) {
@@ -200,9 +242,9 @@ void axon_routine_main(void* args) {
         }
     }
 
-    // SOMA UARTテスト初期化（UART開設後に実施）
-    // 既存のUART設定を上書きして、SOMA通信用に再設定
-    soma_uart_init();
+    // 注意: soma_uart_init()は36バイトフレーム/AES暗号化通信用のテスト関数です。
+    // 通常のSOMA-AXON間通信（3バイトパケット、0xFF header）とは互換性がありません。
+    // 本番動作では呼び出さず、init_uart_ports()で初期化されたUARTドライバを使用してください。
 
     // ==========================================
     // RGB色フェード設定
@@ -324,7 +366,9 @@ void axon_routine_main(void* args) {
         // ==========================================
         // SOMA UARTテスト: フレームチェック
         // ==========================================
-        soma_check_frame();
+        // 注意: soma_check_frame()はSOMA側の36バイトAES暗号化通信用
+        // AXON_BOARDでは使用しない
+        // soma_check_frame();
 
 #ifndef AXON_BOARD  // SOMA UARTテスト中は既存UART処理を無効化
         // ==========================================

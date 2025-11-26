@@ -41,8 +41,10 @@
 #elif defined(AXON_BOARD)
 #define CONFIG_UART_COUNT       (1)
 #define CONFIG_UART_BUFFER_SIZE (48)
-#define S2A_UART_INST           UART_INST
-#define S2A_UART_IRQ            UART_INST_IRQn
+// ★修正完了: TI標準UART0アドレス使用（MSPM0G3507データシートTable 3-1準拠）
+// UART0 Base Address: 0x40108000 (PA10/PA11)
+#define S2A_UART_INST           ((UART_Regs *)0x40108000UL)
+#define S2A_UART_IRQ            UART0_INT_IRQn
 #define S2A_UART_RX_PIN         UART_RX_IOMUX
 #define S2A_UART_RX_PF_FUNC     UART_RX_PF_FUNC
 #define S2A_UART_TX_PIN         UART_TX_IOMUX

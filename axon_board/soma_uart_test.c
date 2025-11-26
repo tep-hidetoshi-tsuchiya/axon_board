@@ -1,8 +1,10 @@
 #include "soma_uart_test.h"
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>      // for memset
 #include "ti_msp_dl_config.h"
 #include "driver_config.h"
+#include "peripheral/msp_peripheral_config.h"  // UART0ピン定義用
 
 #define AXON_FRAME_SIZE 36
 
@@ -96,28 +98,9 @@ void soma_uart_init(void)
     DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_0 | DL_GPIO_PIN_1 | DL_GPIO_PIN_2);  // RGB全消灯 (LOW=消灯)
 #endif
  
-    // UART0のRXFIFOをクリア（リセットは行わない）
-    // 起動直後に途中のデータが残っている可能性があるため、十分にクリア
-    for (volatile int i = 0; i < 100; i++) {
-        while (!DL_UART_isRXFIFOEmpty(S2A_UART_INST)) {
-            DL_UART_receiveData(S2A_UART_INST);
-        }
-        for (volatile int j = 0; j < 1000; j++);  // 少し待機
-    }
-    
-    // UART0の受信割り込みを明示的に有効化
-    // FIFOトリガーレベル: 1バイト受信で割り込み発生
-    DL_UART_setRXFIFOThreshold(S2A_UART_INST, DL_UART_RX_FIFO_LEVEL_ONE_ENTRY);
-    
-    // 全ての割り込みをクリアしてからRX割り込みのみ有効化
-    DL_UART_clearInterruptStatus(S2A_UART_INST, 0xFFFFFFFF);
-    DL_UART_enableInterrupt(S2A_UART_INST, DL_UART_INTERRUPT_RX);
-    
-    // NVIC設定: UART0割り込みを最高優先度に設定
-    NVIC_DisableIRQ(S2A_UART_IRQ);
-    NVIC_ClearPendingIRQ(S2A_UART_IRQ);
-    NVIC_SetPriority(S2A_UART_IRQ, 0);  // 最高優先度
-    NVIC_EnableIRQ(S2A_UART_IRQ);
+    // ========== UART0初期化 ==========
+    // 注意: UART0の全設定(NVIC含む)はSYSCFG_DL_init()内の_msp_peripheral_uart_init()で実施済み
+    // ここでは追加の設定は不要
     
     // AES初期化
     DL_AES_reset(AES);
@@ -283,6 +266,16 @@ void soma_check_frame(void)
 
     frame_received = 0;
     
+    // ★重要: ISRが退避した完成フレームをコピー（競合回避）
+    // extern宣言はsoma_uart_test.hに移動済み
+    
+    if (!rx_complete_ready) {
+        return;  // データ準備できていない
+    }
+    
+    memcpy(rx_frame, rx_complete_frame, AXON_FRAME_SIZE);
+    rx_complete_ready = 0;  // クリア
+    
 #ifdef AXON_BOARD
     // デバッグ: 受信フレームを履歴に保存
     debug_frame_count++;
@@ -343,4 +336,435 @@ void soma_check_frame(void)
     // 全LED消灯（処理完了）
     DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_0 | DL_GPIO_PIN_1 | DL_GPIO_PIN_2);  // RGB全消灯
 #endif
+}
+
+// ============================================================
+// AXONボード内ループバックテスト
+// ============================================================
+/**
+ * @brief UART0ループバックテスト（AXON内部テスト用）
+ * @details PA10(TX)とPA11(RX)を物理的に接続して実行
+ *          36バイトのテストパターンを送信し、受信データと比較
+ * @return true: テスト成功, false: テスト失敗
+ * 
+ * 使用方法:
+ *   1. PA10(TX)とPA11(RX)をジャンパーで接続
+ *   2. axon_routine.cから呼び出し
+ *   3. UARTコンソールでテスト結果を確認
+ */
+bool axon_uart_loopback_test(void)
+{
+    printf("\n========================================\n");
+    printf("AXON UART0 LOOPBACK TEST\n");
+    printf("========================================\n");
+    
+    // マクロ展開確認
+    printf("\n[PRE-TEST] Macro Check:\n");
+    #ifdef AXON_BOARD
+    printf("  AXON_BOARD is defined\n");
+    #else
+    printf("  AXON_BOARD is NOT defined\n");
+    #endif
+    printf("  S2A_UART_INST macro address = 0x%08lX\n", (unsigned long)S2A_UART_INST);
+    printf("  UART0 address = 0x%08lX\n", (unsigned long)UART0);
+    printf("  UART2 address = 0x%08lX\n", (unsigned long)UART2);
+    
+    // UARTレジスタ状態確認
+    printf("\n[PRE-TEST] UART Register Check:\n");
+    printf("  S2A_UART_INST addr = 0x%08lX\n", (unsigned long)S2A_UART_INST);
+    printf("  CTL0  = 0x%08lX (bit0=EN, bit8=TXE, bit9=RXE)\n", (unsigned long)S2A_UART_INST->CTL0);
+    printf("  STAT  = 0x%08lX (bit6=BUSY, bit4=TXFE, bit3=RXFF)\n", (unsigned long)S2A_UART_INST->STAT);
+    printf("  IBRD  = 0x%08lX\n", (unsigned long)S2A_UART_INST->IBRD);
+    printf("  FBRD  = 0x%08lX\n", (unsigned long)S2A_UART_INST->FBRD);
+    printf("  IFLS  = 0x%08lX (RX FIFO level)\n", (unsigned long)S2A_UART_INST->IFLS);
+    printf("  CPU_INT = 0x%08lX\n", (unsigned long)S2A_UART_INST->CPU_INT.IMASK);
+    
+    // ピン設定確認（IOMUX PINCM21=PA10, PINCM22=PA11）
+    printf("\n[PRE-TEST] Pin Configuration Check:\n");
+    volatile uint32_t *pincm21 = (volatile uint32_t *)0x40428054;  // IOMUX PINCM21 (PA10)
+    volatile uint32_t *pincm22 = (volatile uint32_t *)0x40428058;  // IOMUX PINCM22 (PA11)
+    printf("  IOMUX_PINCM21 address = 0x%08lX\n", (unsigned long)IOMUX_PINCM21);
+    printf("  IOMUX_PINCM21_PF_UART0_TX value = 0x%08lX\n", (unsigned long)IOMUX_PINCM21_PF_UART0_TX);
+    printf("  IOMUX_PINCM22_PF_UART0_RX value = 0x%08lX\n", (unsigned long)IOMUX_PINCM22_PF_UART0_RX);
+    printf("  PINCM21 (PA10/TX) = 0x%08lX\n", (unsigned long)*pincm21);
+    printf("  PINCM22 (PA11/RX) = 0x%08lX\n", (unsigned long)*pincm22);
+    printf("  Expected: bit[3:0]=PF (should be 0x2 for UART0)\n");
+    printf("  Expected: bit[8]=INENA (should be 1 for RX)\n");
+    
+    // NVIC状態確認
+    printf("\n[PRE-TEST] NVIC Check:\n");
+    printf("  UART0_IRQn = %d\n", S2A_UART_IRQ);
+    printf("  NVIC Enabled = %d\n", NVIC_GetEnableIRQ(S2A_UART_IRQ));
+    printf("  NVIC Priority = %lu\n", (unsigned long)NVIC_GetPriority(S2A_UART_IRQ));
+    printf("  NVIC Pending = %d\n", NVIC_GetPendingIRQ(S2A_UART_IRQ));
+    
+    // デバッグカウンタリセット
+    debug_rx_count = 0;
+    debug_frame_count = 0;
+    debug_sync_reset_count = 0;
+    debug_complete_count = 0;
+    debug_last_byte = 0;
+    debug_rx_index = 0;
+    
+    // テストパターン準備（36バイトフレーム）
+    uint8_t test_tx[AXON_FRAME_SIZE];
+    uint8_t test_rx[AXON_FRAME_SIZE];
+    
+    // テストデータ生成: Header(0x14) + Length(0x20) + Data(32) + CRC(2)
+    test_tx[0] = 0x14;  // Header
+    test_tx[1] = 0x20;  // Length
+    for (int i = 2; i < 34; i++) {
+        test_tx[i] = (uint8_t)(i - 2);  // 0x00~0x1F
+    }
+    // CRC16計算
+    uint16_t crc = crc16_tep(test_tx, 34);
+    test_tx[34] = crc & 0xFF;        // CRC LSB
+    test_tx[35] = (crc >> 8) & 0xFF; // CRC MSB
+    
+    // 受信バッファクリア
+    memset(test_rx, 0, AXON_FRAME_SIZE);
+    rx_index = 0;
+    frame_received = 0;
+    memset(rx_frame, 0, AXON_FRAME_SIZE);
+    
+    printf("Test Pattern (36 bytes):\n");
+    for (int i = 0; i < AXON_FRAME_SIZE; i++) {
+        printf("%02X ", test_tx[i]);
+        if ((i + 1) % 16 == 0) printf("\n");
+    }
+    if (AXON_FRAME_SIZE % 16 != 0) printf("\n");
+    
+    printf("\nSending data...\n");
+    
+    // データ送信（1バイトずつ確実に）
+    uint16_t timeout = 50;
+    for (int i = 0; i < AXON_FRAME_SIZE; i++) {
+        // TX FIFO空き待ち
+        while (!DL_UART_isTXFIFOEmpty(S2A_UART_INST)) {
+            __NOP();
+            timeout--;
+            if (timeout <= 0)   break;
+        }
+        
+        DL_UART_transmitData(S2A_UART_INST, test_tx[i]);
+        
+        // 送信完了待ち
+        timeout = 10000;
+        while (DL_UART_isBusy(S2A_UART_INST)) {
+            __NOP();
+            timeout--;
+            if (timeout <= 0)   break;
+        }
+        
+        // バイト間ディレイ
+        for (volatile int j = 0; j < 100; j++);
+    }
+    
+    printf("Transmission completed.\n");
+    printf("Waiting for reception...\n");
+    
+    // 受信待機（ISRでframe_receivedフラグがセットされるまで待つ）
+    uint32_t wait_count = 0;
+    for (volatile int i = 0; i < 10000000; i++) {
+        wait_count++;
+        // ★修正: rx_indexではなくframe_receivedで判定（ISRが完了をセット）
+        if (frame_received) {
+            break;
+        }
+        if (wait_count % 1000000 == 0) {
+            printf("  Waiting... rx_index=%d, debug_rx_count=%lu, frame_received=%d\n", 
+                   rx_index, (unsigned long)debug_rx_count, frame_received);
+        }
+    }
+    
+    // デバッグ情報表示
+    printf("\n[POST-RX] Debug Info:\n");
+    printf("  debug_rx_count = %lu (total bytes received in ISR)\n", (unsigned long)debug_rx_count);
+    printf("  debug_frame_count = %lu\n", (unsigned long)debug_frame_count);
+    printf("  debug_complete_count = %lu\n", (unsigned long)debug_complete_count);
+    printf("  debug_last_byte = 0x%02X\n", debug_last_byte);
+    printf("  debug_rx_index = %d\n", debug_rx_index);
+    printf("  rx_index = %d\n", rx_index);
+    printf("  frame_received = %d\n", frame_received);
+    printf("  rx_complete_ready = %d\n", rx_complete_ready);
+    
+    // RXFIFOの状態確認
+    printf("\n[POST-RX] UART Status:\n");
+    printf("  STAT = 0x%08lX\n", (unsigned long)S2A_UART_INST->STAT);
+    printf("  RX FIFO Empty = %d\n", DL_UART_isRXFIFOEmpty(S2A_UART_INST));
+    printf("  CPU_INT.RIS = 0x%08lX\n", (unsigned long)S2A_UART_INST->CPU_INT.RIS);
+    printf("  CPU_INT.MIS = 0x%08lX\n", (unsigned long)S2A_UART_INST->CPU_INT.MIS);
+    
+    // ★重要: ISRが退避したフレームデータをコピー（rx_frameは次の受信で上書きされる可能性）
+    if (rx_complete_ready) {
+        memcpy(test_rx, rx_complete_frame, AXON_FRAME_SIZE);
+        rx_complete_ready = 0;  // クリア
+    } else {
+        memcpy(test_rx, rx_frame, AXON_FRAME_SIZE);
+    }
+    int received_bytes = (debug_rx_count >= AXON_FRAME_SIZE) ? AXON_FRAME_SIZE : debug_rx_count;
+    
+    printf("\nReceived %d bytes:\n", received_bytes);
+    for (int i = 0; i < received_bytes; i++) {
+        printf("%02X ", test_rx[i]);
+        if ((i + 1) % 16 == 0) printf("\n");
+    }
+    if (received_bytes % 16 != 0) printf("\n");
+    
+    // 結果検証
+    bool test_passed = true;
+    
+    if (received_bytes != AXON_FRAME_SIZE) {
+        printf("\n[FAIL] Byte count mismatch: expected %d, got %d\n",
+               AXON_FRAME_SIZE, received_bytes);
+        test_passed = false;
+    } else {
+        // データ比較
+        int mismatch_count = 0;
+        for (int i = 0; i < AXON_FRAME_SIZE; i++) {
+            if (test_tx[i] != test_rx[i]) {
+                if (mismatch_count == 0) {
+                    printf("\n[FAIL] Data mismatch:\n");
+                }
+                printf("  Byte[%d]: TX=0x%02X, RX=0x%02X\n",
+                       i, test_tx[i], test_rx[i]);
+                mismatch_count++;
+                test_passed = false;
+            }
+        }
+        
+        if (test_passed) {
+            printf("\n[PASS] All %d bytes matched!\n", AXON_FRAME_SIZE);
+        } else {
+            printf("\n[FAIL] %d bytes mismatched\n", mismatch_count);
+        }
+    }
+    
+    // LED表示（緑=成功、赤=失敗）
+    if (test_passed) {
+        DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_1);  // 緑LED
+        printf("\n✓ LOOPBACK TEST PASSED\n");
+    } else {
+        DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_0);  // 赤LED
+        printf("\n✗ LOOPBACK TEST FAILED\n");
+    }
+    
+    printf("========================================\n\n");
+    
+    return test_passed;
+}
+
+/// @brief 36バイトフレーム完全検証テスト（CRC・フレーム同期・ISR処理含む）
+/// @return true=成功, false=失敗
+bool axon_36byte_frame_test(void) {
+    printf("\n========================================\n");
+    printf("36-BYTE FRAME TEST (with CRC validation)\n");
+    printf("========================================\n");
+    
+    // 外部宣言：ISRが退避したフレームデータ（soma_uart_test.hで宣言済み）
+    
+    // デバッグカウンタリセット
+    debug_rx_count = 0;
+    debug_frame_count = 0;
+    debug_sync_reset_count = 0;
+    debug_complete_count = 0;
+    debug_last_byte = 0;
+    debug_rx_index = 0;
+    debug_byte1 = 0;
+    debug_byte1_ng_count = 0;
+    
+    // 受信バッファクリア
+    rx_index = 0;
+    frame_received = 0;
+    rx_complete_ready = 0;
+    memset(rx_frame, 0, AXON_FRAME_SIZE);
+    memset(rx_complete_frame, 0, AXON_FRAME_SIZE);
+    
+    // テストフレーム作成
+    uint8_t test_frame[AXON_FRAME_SIZE];
+    test_frame[0] = 0x14;  // Header
+    test_frame[1] = 0x20;  // Length (32 bytes)
+    
+    // データ部：シンプルなパターン (0x00~0x1F)
+    for (int i = 2; i < 34; i++) {
+        test_frame[i] = (uint8_t)(i - 2);
+    }
+    
+    // CRC16計算（Byte[0-33]に対して）
+    uint16_t crc_calc = crc16_tep(test_frame, 34);
+    test_frame[34] = crc_calc & 0xFF;         // CRC LSB
+    test_frame[35] = (crc_calc >> 8) & 0xFF;  // CRC MSB
+    
+    printf("\n[TEST FRAME] 36 bytes:\n");
+    printf("  Header: 0x%02X 0x%02X\n", test_frame[0], test_frame[1]);
+    printf("  Data[0-31]: ");
+    for (int i = 2; i < 34; i++) {
+        printf("%02X ", test_frame[i]);
+        if ((i - 2 + 1) % 16 == 0) printf("\n              ");
+    }
+    printf("\n  CRC16: 0x%02X%02X (calculated=0x%04X)\n",
+           test_frame[35], test_frame[34], crc_calc);
+    
+    // LED消灯（テスト開始）
+    DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_0 | DL_GPIO_PIN_1 | DL_GPIO_PIN_2);
+    
+    printf("\n[SENDING] 36 bytes via UART0 loopback...\n");
+    
+    // 送信（1バイトずつ確実に）
+    for (int i = 0; i < AXON_FRAME_SIZE; i++) {
+        // TX FIFO空き待ち
+        uint16_t timeout = 10000;
+        while (!DL_UART_isTXFIFOEmpty(S2A_UART_INST)) {
+            if (--timeout == 0) {
+                printf("[ERROR] TX timeout at byte %d\n", i);
+                return false;
+            }
+        }
+        
+        DL_UART_transmitData(S2A_UART_INST, test_frame[i]);
+        
+        // 送信完了待ち
+        timeout = 10000;
+        while (DL_UART_isBusy(S2A_UART_INST)) {
+            if (--timeout == 0) {
+                printf("[ERROR] BUSY timeout at byte %d\n", i);
+                return false;
+            }
+        }
+        
+        // バイト間ディレイ（フレーム同期確認用）
+        for (volatile int d = 0; d < 200; d++);
+    }
+    
+    printf("[SENT] Transmission completed.\n");
+    
+    // 受信待機（ISRで処理される）
+    printf("\n[WAITING] Receiving via interrupt...\n");
+    uint32_t wait_loops = 0;
+    const uint32_t MAX_WAIT = 5000000;
+    
+    while (wait_loops < MAX_WAIT) {
+        wait_loops++;
+        
+        // 定期的に状態表示
+        if (wait_loops % 1000000 == 0) {
+            printf("  [%lu] rx_index=%d, rx_count=%lu, complete=%lu, ready=%d\n",
+                   wait_loops / 1000000,
+                   rx_index,
+                   (unsigned long)debug_rx_count,
+                   (unsigned long)debug_complete_count,
+                   rx_complete_ready);
+        }
+        
+        // 受信完了検出
+        if (frame_received && rx_complete_ready) {
+            break;
+        }
+    }
+    
+    printf("[RECEIVED] Wait completed.\n");
+    
+    // デバッグ情報表示
+    printf("\n[DEBUG INFO]\n");
+    printf("  debug_rx_count        = %lu (total bytes in ISR)\n", (unsigned long)debug_rx_count);
+    printf("  debug_complete_count  = %lu (36-byte frames completed)\n", (unsigned long)debug_complete_count);
+    printf("  debug_sync_reset_count= %lu (header sync resets)\n", (unsigned long)debug_sync_reset_count);
+    printf("  debug_byte1_ng_count  = %lu (2nd byte != 0x20)\n", (unsigned long)debug_byte1_ng_count);
+    printf("  debug_last_byte       = 0x%02X\n", debug_last_byte);
+    printf("  rx_index              = %d\n", rx_index);
+    printf("  frame_received        = %d\n", frame_received);
+    printf("  rx_complete_ready     = %d\n", rx_complete_ready);
+    
+    // 結果検証
+    bool test_passed = true;
+    
+    if (!frame_received) {
+        printf("\n[FAIL] Frame not received (frame_received=0)\n");
+        test_passed = false;
+    } else if (!rx_complete_ready) {
+        printf("\n[FAIL] Complete frame not ready (rx_complete_ready=0)\n");
+        test_passed = false;
+    } else if (debug_rx_count != AXON_FRAME_SIZE) {
+        printf("\n[FAIL] Byte count mismatch: expected %d, got %lu\n",
+               AXON_FRAME_SIZE, (unsigned long)debug_rx_count);
+        test_passed = false;
+    } else {
+        // ISRが退避したフレームをコピー
+        uint8_t received_frame[AXON_FRAME_SIZE];
+        memcpy(received_frame, rx_complete_frame, AXON_FRAME_SIZE);
+        rx_complete_ready = 0;  // クリア
+        frame_received = 0;
+        
+        printf("\n[RECEIVED DATA] 36 bytes:\n");
+        for (int i = 0; i < AXON_FRAME_SIZE; i++) {
+            printf("%02X ", received_frame[i]);
+            if ((i + 1) % 16 == 0) printf("\n");
+        }
+        if (AXON_FRAME_SIZE % 16 != 0) printf("\n");
+        
+        // ヘッダー検証
+        if (received_frame[0] != 0x14) {
+            printf("\n[FAIL] Header byte[0]: expected 0x14, got 0x%02X\n", received_frame[0]);
+            test_passed = false;
+        }
+        if (received_frame[1] != 0x20) {
+            printf("\n[FAIL] Length byte[1]: expected 0x20, got 0x%02X\n", received_frame[1]);
+            test_passed = false;
+        }
+        
+        // データ部検証
+        int data_errors = 0;
+        for (int i = 2; i < 34; i++) {
+            if (received_frame[i] != test_frame[i]) {
+                if (data_errors == 0) {
+                    printf("\n[FAIL] Data mismatch:\n");
+                }
+                printf("  Byte[%d]: expected 0x%02X, got 0x%02X\n",
+                       i, test_frame[i], received_frame[i]);
+                data_errors++;
+            }
+        }
+        if (data_errors > 0) {
+            test_passed = false;
+        }
+        
+        // CRC検証
+        uint16_t crc_recv = received_frame[34] | (received_frame[35] << 8);
+        uint16_t crc_calc_rx = crc16_tep(received_frame, 34);
+        
+        printf("\n[CRC VALIDATION]\n");
+        printf("  Received CRC : 0x%04X\n", crc_recv);
+        printf("  Calculated   : 0x%04X\n", crc_calc_rx);
+        
+        if (crc_recv != crc_calc_rx) {
+            printf("  Result: FAILED (mismatch)\n");
+            test_passed = false;
+        } else {
+            printf("  Result: PASSED (match)\n");
+        }
+        
+        // 全体結果
+        if (test_passed) {
+            printf("\n[SUCCESS] All validations passed!\n");
+            printf("  ✓ Header: 0x14 0x20\n");
+            printf("  ✓ Data: 32 bytes correct\n");
+            printf("  ✓ CRC16: valid\n");
+            printf("  ✓ Frame sync: working\n");
+            printf("  ✓ ISR buffering: working\n");
+        }
+    }
+    
+    // LED表示
+    DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_0 | DL_GPIO_PIN_1 | DL_GPIO_PIN_2);
+    if (test_passed) {
+        DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_1);  // 緑LED
+        printf("\n✓ 36-BYTE FRAME TEST PASSED\n");
+    } else {
+        DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_0);  // 赤LED
+        printf("\n✗ 36-BYTE FRAME TEST FAILED\n");
+    }
+    
+    printf("========================================\n\n");
+    
+    return test_passed;
 }

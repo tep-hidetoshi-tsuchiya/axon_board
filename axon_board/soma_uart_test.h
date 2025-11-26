@@ -39,6 +39,10 @@ extern volatile uint8_t debug_last_byte;         // 最後に受信したバイ�
 extern volatile uint8_t debug_rx_index;          // 現在のrx_index
 extern volatile uint8_t debug_byte1;             // 2バイト目の値（0x20のはず）
 extern volatile uint32_t debug_byte1_ng_count;   // 2バイト目が0x20でない回数
+
+// ISR→メイン受け渡しバッファ（ダブルバッファリング用）
+extern uint8_t rx_complete_frame[AXON_FRAME_SIZE];
+extern volatile uint8_t rx_complete_ready;
 #endif
 
 /// @brief CRC16-CCITT (ISO/IEC 13239) LSB-first計算関数
@@ -54,7 +58,10 @@ extern volatile uint32_t debug_byte1_ng_count;   // 2バイト目が0x20でな�
 /// @return CRC16値（リトルエンディアン）
 uint16_t crc16_tep(const uint8_t* data, int len);
 
-/// @brief SOMA UART初期化
+/// @brief SOMA UART初期化（36バイトフレーム/AES暗号化通信用）
+/// @warning この関数は通常のSOMA-AXON間通信（3バイトパケット、0xFF header）とは
+///          互換性がありません。デバッグ/テスト専用です。
+/// @note 本番動作では init_uart_ports() で初期化されたUARTドライバを使用してください。
 void soma_uart_init(void);
 
 /// @brief AES-128-CBC復号処理
@@ -73,5 +80,17 @@ bool send_nack_frame(void);
 
 /// @brief フレームのチェックと処理（AES復号対応）
 void soma_check_frame(void);
+
+/// @brief AXONボード内UARTループバックテスト
+/// @details PA10(TX)とPA11(RX)を物理的に接続して実行
+///          36バイトのテストパターンを送信し、受信データと比較
+/// @return true: テスト成功, false: テスト失敗
+bool axon_uart_loopback_test(void);
+
+/// @brief 36バイトフレーム完全検証テスト（CRC・フレーム同期・ISR処理含む）
+/// @details ヘッダー(0x14 0x20) + データ32バイト + CRC16の完全なフレームテスト
+///          ISRのダブルバッファリング、フレーム同期、CRC検証を全て確認
+/// @return true: テスト成功, false: テスト失敗
+bool axon_36byte_frame_test(void);
 
 #endif  // __SOMA_UART_TEST_H__

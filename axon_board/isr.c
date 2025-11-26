@@ -6,9 +6,15 @@
 #include "peripheral/fram_utils.h"
 #include "event.h"
 #include "soma_uart_test.h"
+#include <string.h>  // memcpy用
 
 systick_t     g_systick_count = 0U;
 uart_status_t g_uart_status   = {0};
+
+// ★追加: 受信完了データ保持用（ISR→メイン受け渡しバッファ）
+// staticを削除してグローバルスコープに変更（soma_uart_test.cから参照可能にする）
+uint8_t rx_complete_frame[AXON_FRAME_SIZE];
+volatile uint8_t rx_complete_ready = 0;
 
 void SysTick_Handler(void) {
     g_systick_count++;
@@ -241,6 +247,7 @@ void UART0_IRQHandler(void) {
         debug_rx_count++;
         debug_last_byte = b;
         
+        
         // フレーム同期: 2バイトヘッダー(0x14 0x20)を確実に検出
         if (rx_index == 0) {
             // 1バイト目: 0x14でなければ破棄して次の割り込みを待つ
@@ -279,6 +286,11 @@ void UART0_IRQHandler(void) {
             // 36バイト受信完了
             if (rx_index >= AXON_FRAME_SIZE) {
                 debug_complete_count++;
+                
+                // ★重要: 次の受信で上書きされる前に完成フレームを退避
+                memcpy(rx_complete_frame, rx_frame, AXON_FRAME_SIZE);
+                rx_complete_ready = 1;
+                
                 frame_received = 1;
                 rx_index = 0;
                 debug_rx_index = rx_index;
