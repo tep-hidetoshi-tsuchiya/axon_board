@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>  // size_t定義用
 
 #define AXON_FRAME_SIZE 36
 #define AXON_MAX_FRAME_SIZE 40  // CODEPKT用の最大サイズ

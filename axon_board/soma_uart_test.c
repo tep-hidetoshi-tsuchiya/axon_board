@@ -688,8 +688,8 @@ bool axon_36byte_frame_test(void) {
         
         // 定期的に状態表示
         if (wait_loops % 1000000 == 0) {
-            printf("  [%lu] rx_index=%d, rx_count=%lu, complete=%lu, ready=%d\n",
-                   wait_loops / 1000000,
+            printf("  [%u] rx_index=%d, rx_count=%lu, complete=%lu, ready=%d\n",
+                   (unsigned int)(wait_loops / 1000000),
                    rx_index,
                    (unsigned long)debug_rx_count,
                    (unsigned long)debug_complete_count,
