@@ -7,11 +7,17 @@
 #include "peripheral/msp_peripheral_config.h"  // UART0ピン定義用
 
 #define AXON_FRAME_SIZE 36
+#define AXON_MAX_FRAME_SIZE 40  // CODEPKT用の最大サイズ
 
 uint8_t rx_frame[AXON_FRAME_SIZE];
 uint8_t decrypted_data[AES_DATA_SIZE];
 volatile uint8_t rx_index = 0;
 volatile uint8_t frame_received = 0;
+
+// 可変長フレーム受信バッファ（SETOKEY/CODEPKT/ERRCHK用）
+uint8_t rx_variable_frame[AXON_MAX_FRAME_SIZE];
+volatile uint8_t rx_variable_ready = 0;
+volatile uint8_t rx_variable_length = 0;
 
 // デバッグ用: 受信フレーム履歴（最新5フレーム）
 #ifdef AXON_BOARD

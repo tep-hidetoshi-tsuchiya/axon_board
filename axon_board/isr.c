@@ -283,17 +283,31 @@ void UART0_IRQHandler(void) {
             rx_frame[rx_index++] = b;
             debug_rx_index = rx_index;
             
-            // 36バイト受信完了
-            if (rx_index >= AXON_FRAME_SIZE) {
-                debug_complete_count++;
+            // フレーム長を動的に判定（Header + Length + Data + CRC16）
+            uint8_t expected_length = 0;
+            if (rx_index >= 2) {
+                uint8_t header = rx_frame[0];
+                uint8_t length = rx_frame[1];
+                expected_length = 2 + length + 2;  // Header(1) + Length(1) + Data(length) + CRC16(2)
                 
-                // ★重要: 次の受信で上書きされる前に完成フレームを退避
-                memcpy(rx_complete_frame, rx_frame, AXON_FRAME_SIZE);
-                rx_complete_ready = 1;
-                
-                frame_received = 1;
-                rx_index = 0;
-                debug_rx_index = rx_index;
+                // フレーム受信完了判定
+                if (rx_index >= expected_length) {
+                    debug_complete_count++;
+                    
+                    // 36バイトフレームは従来バッファ、それ以外は可変長バッファへ
+                    if (expected_length == AXON_FRAME_SIZE) {
+                        memcpy(rx_complete_frame, rx_frame, AXON_FRAME_SIZE);
+                        rx_complete_ready = 1;
+                    } else if (expected_length <= AXON_MAX_FRAME_SIZE) {
+                        memcpy(rx_variable_frame, rx_frame, expected_length);
+                        rx_variable_length = expected_length;
+                        rx_variable_ready = 1;
+                    }
+                    
+                    frame_received = 1;
+                    rx_index = 0;
+                    debug_rx_index = rx_index;
+                }
             }
         }
     }

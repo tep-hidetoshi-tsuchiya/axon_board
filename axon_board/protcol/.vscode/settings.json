@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "cstdlib": "c"
-    },
-    "C_Cpp.default.includePath": [
-        "src\\"
-    ]
-}

@@ -15,6 +15,7 @@
 #include "uart_packet.h"
 #include "event.h"
 #include "soma_uart_test.h"
+#include "protocol/src/s2a_packet.h"  // CHKIRQ/SETAXON等のハンドラ
 
 #define POLLING_INTERVAL_MS (500U)
 #define SWITCH_DEBOUNCE_US  (50U)
@@ -371,7 +372,98 @@ void axon_routine_main(void* args) {
         // soma_check_frame();
 
         // ==========================================
-        // UART受信処理
+        // 36バイトフレーム受信処理（CHKIRQ/SETAXON/NOP等）
+        // ==========================================
+        // ISRで受信した36バイトフレームを処理
+        extern volatile uint8_t rx_complete_ready;
+        extern uint8_t rx_complete_frame[36];
+        
+        if (rx_complete_ready) {
+            // フレームを処理（protocol/src/s2a_packet.cの各ハンドラを呼び出し）
+            uint8_t header = rx_complete_frame[0];
+            uint8_t length = rx_complete_frame[1];
+            
+            // Headerでコマンド種別を判定
+            bool handled = false;
+            
+            if (header == 0x14 && length == 0x20) {
+                // 36バイト標準フレーム（CHKIRQ/SETAXON/NOP/AFWUP）
+                uint8_t cmd_id = rx_complete_frame[2];  // Data部の最初のバイトがコマンドID
+                
+                switch (cmd_id) {
+                    case 0x49:  // CHKIRQ - ポート確認シーケンス
+                        handled = axon_handle_chkirq(rx_complete_frame);
+                        if (handled) {
+                            // CHKIRQ成功 - IRQは既にクリア済み（axon_handle_chkirq内で処理）
+                        }
+                        break;
+                        
+                    case 0x4A:  // SETAXON - AXON設定書き込み
+                        handled = axon_handle_setaxon(rx_complete_frame);
+                        if (handled) {
+                            // 設定反映成功 - 状態更新
+                            _change_status(&axon_state, STATE_NORMAL);
+                            changed = true;
+                        }
+                        break;
+                        
+                    case 0x50:  // NOP - 無操作コマンド
+                        handled = axon_handle_nop(rx_complete_frame);
+                        break;
+                        
+                    case 0x18:  // AFWUP - FW更新要求
+                        handled = axon_handle_afwup(rx_complete_frame);
+                        break;
+                        
+                    default:
+                        // 未知のコマンド - 無視
+                        break;
+                }
+            }
+            
+            // 処理完了後、フラグをクリア
+            rx_complete_ready = 0;
+        }
+        
+        // ==========================================
+        // 可変長フレーム受信処理（SETOKEY/CODEPKT/ERRCHK）
+        // ==========================================
+        extern volatile uint8_t rx_variable_ready;
+        extern volatile uint8_t rx_variable_length;
+        extern uint8_t rx_variable_frame[40];
+        
+        if (rx_variable_ready) {
+            uint8_t header = rx_variable_frame[0];
+            uint8_t length = rx_variable_frame[1];
+            bool handled = false;
+            
+            if (header == 0x11 && length == 0x12 && rx_variable_length == 20) {
+                // 20バイトフレーム - SETOKEY（運用鍵設定）
+                handled = axon_handle_setokey(rx_variable_frame);
+                if (handled) {
+                    // 運用鍵設定成功
+                }
+            } else if (header == 0xA5 && length == 0x24 && rx_variable_length == 40) {
+                // 40バイトフレーム - CODEPKT（FWコードパケット）
+                handled = axon_handle_codepkt(rx_variable_frame);
+                if (handled) {
+                    // FWコードパケット受信成功
+                }
+            } else if (header == 0xC4 && length == 0x02 && rx_variable_length == 6) {
+                // 6バイトフレーム - ERRCHK（FWエラーチェック）
+                handled = axon_handle_errchk(rx_variable_frame);
+                if (handled) {
+                    // エラーチェック完了
+                }
+            }
+            
+            // 処理完了後、フラグをクリア
+            rx_variable_ready = 0;
+            rx_variable_length = 0;
+        }
+
+        // ==========================================
+        // 旧POC用UART受信処理（3バイトパケット）
         // ==========================================
         status = receive_uart_s2a_packet(&s2a_packet);
         

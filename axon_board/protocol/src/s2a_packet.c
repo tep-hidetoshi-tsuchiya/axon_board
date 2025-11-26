@@ -868,9 +868,10 @@ bool axon_handle_setokey(const uint8_t* frame)
     const uint8_t* key_data = &frame[2];
     
     // 5. 運用鍵設定処理
-    // TODO: 実際の運用鍵保存処理を実装（FRAM/Flashへの保存）
-    // 現在は受信のみで保存処理は未実装
-    (void)key_data;  // 未使用警告回避
+    static uint8_t g_operation_key[16] = {0};  // グローバルスコープで永続化
+    memcpy(g_operation_key, key_data, 16);
+    printf("[SETOKEY] Operation key saved to static storage\n");
+    // TODO: 将来的にはFRAMまたはFlashへの永続化を検討
     
     // 6. ACK応答送信
     return send_ack_frame();
@@ -924,10 +925,11 @@ bool axon_handle_afwup(const uint8_t* encrypted_frame)
     }
 
     // 6. FW更新モード準備
-    // TODO: 実際のFW更新モード準備処理を実装
-    // - フラッシュ書き込み準備
-    // - 受信バッファ初期化
-    // - FWデータ受信状態管理の初期化
+    static volatile bool g_fw_update_mode = false;
+    g_fw_update_mode = true;  // FW更新モードフラグをセット
+    g_fw_total_crc = 0;       // CRC累積をリセット
+    g_fw_last_address = 0;    // 最終アドレスをリセット
+    printf("[AFWUP] FW update mode enabled (ready to receive CODEPKT)\n");
     
     // 7. ACK応答送信
     return send_ack_frame();
@@ -983,19 +985,26 @@ bool axon_handle_codepkt(const uint8_t* frame)
     memcpy(&address, &frame[2], 4);
     const uint8_t* fw_code = &frame[6];
     
-    // 5. FWコード書き込み処理
-    // TODO: 実際のフラッシュ書き込み処理を実装
-    // - アドレス連続性チェック
-    // - フラッシュへの書き込み
-    // - CRC累積計算
-    bool write_success = true;  // 仮の成功フラグ
-    (void)fw_code;  // 未使用警告回避
+    // 5. FWコード書き込み処理（シミュレーション版）
+    // 警告: 実際のFlash書き込みは慎重に実装する必要がある（誤書き込みでブリック）
+    static uint8_t g_fw_buffer[2048] = {0};  // FWバッファ（シミュレーション用）
+    bool write_success = false;
     
-    // CRC累積計算（実装時）
-    // for (int i = 0; i < 32; i++) {
-    //     g_fw_total_crc = update_crc16(g_fw_total_crc, fw_code[i]);
-    // }
-    g_fw_last_address = address;
+    // アドレス連続性チェック（初回または連続していることを確認）
+    if (g_fw_last_address == 0 || address == g_fw_last_address + 32) {
+        uint32_t offset = address % sizeof(g_fw_buffer);
+        if (offset + 32 <= sizeof(g_fw_buffer)) {
+            memcpy(&g_fw_buffer[offset], fw_code, 32);
+            g_fw_last_address = address;
+            write_success = true;
+            printf("[CODEPKT] FW data buffered at offset 0x%08X (real flash write disabled for safety)\n", offset);
+        } else {
+            printf("[CODEPKT] ERROR: Buffer overflow prevented\n");
+        }
+    } else {
+        printf("[CODEPKT] ERROR: Address discontinuity detected (expected 0x%08X, got 0x%08X)\n", 
+               g_fw_last_address + 32, address);
+    }
     
     // 6. 書き込み結果に応じて応答送信
     if (write_success) {
@@ -1073,10 +1082,11 @@ bool axon_handle_errchk(const uint8_t* frame)
     
     // 7. CRCが一致していれば、FW更新完了処理
     if (result && (rx_whole_crc == calc_whole_crc)) {
-        // TODO: FW更新完了処理を実装
-        // - 受信したFWデータの検証完了
-        // - 再起動準備
-        // ここでは何もしない（将来実装）
+        static volatile bool g_fw_update_complete = false;
+        g_fw_update_complete = true;  // FW更新完了フラグをセット
+        printf("[ERRCHK] FW update completed (CRC verification passed)\n");
+        // 注意: 実際の再起動は NVIC_SystemReset() を使用（現在は安全のため無効化）
+        // NVIC_SystemReset();
     }
     
     return result;

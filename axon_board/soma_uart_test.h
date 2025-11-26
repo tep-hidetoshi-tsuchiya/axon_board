@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #define AXON_FRAME_SIZE 36
+#define AXON_MAX_FRAME_SIZE 40  // CODEPKT用の最大サイズ
 #define AES_KEY_SIZE 16
 #define AES_IV_SIZE 16
 #define AES_DATA_SIZE 32
@@ -43,6 +44,11 @@ extern volatile uint32_t debug_byte1_ng_count;   // 2バイト目が0x20でな�
 // ISR→メイン受け渡しバッファ（ダブルバッファリング用）
 extern uint8_t rx_complete_frame[AXON_FRAME_SIZE];
 extern volatile uint8_t rx_complete_ready;
+
+// 可変長フレーム受信バッファ（SETOKEY/CODEPKT/ERRCHK用）
+extern uint8_t rx_variable_frame[AXON_MAX_FRAME_SIZE];
+extern volatile uint8_t rx_variable_ready;
+extern volatile uint8_t rx_variable_length;  // 受信したフレームの実際の長さ
 #endif
 
 /// @brief CRC16-CCITT (ISO/IEC 13239) LSB-first計算関数
