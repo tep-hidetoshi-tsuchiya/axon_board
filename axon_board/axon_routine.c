@@ -197,7 +197,7 @@ void axon_routine_main(void* args) {
     // PA10-PA11をショート接続してからテスト実行
     // 注意: UART初期化はSYSCFG_DL_init()内の_msp_peripheral_uart_init()で完了済み
     // soma_uart_init()は呼ばない（SOMA側用の設定であり、AXON_BOARDのUART0と互換性なし）
-    #if 1  // ループバックテストを有効化する場合は #if 1 に変更
+    #if 0  // ループバックテストを有効化する場合は #if 1 に変更
     {
         bool loopback_result = axon_uart_loopback_test();
         if (!loopback_result) {
@@ -220,7 +220,7 @@ void axon_routine_main(void* args) {
         if (!axon_36byte_frame_test()) {
             // テスト失敗 - 赤LED点滅
             printf("36-byte Frame Test FAILED!\n");
-            while (1) {
+            while (1) {y
                 DL_GPIO_togglePins(GPIOB, DL_GPIO_PIN_0);  // RED LED blink
                 delay_cycles(16000000);  // 0.5秒
             }
@@ -370,7 +370,6 @@ void axon_routine_main(void* args) {
         // AXON_BOARDでは使用しない
         // soma_check_frame();
 
-#ifndef AXON_BOARD  // SOMA UARTテスト中は既存UART処理を無効化
         // ==========================================
         // UART受信処理
         // ==========================================
@@ -473,14 +472,12 @@ void axon_routine_main(void* args) {
 
         if (period - notified_time > POLLING_INTERVAL_MS || changed) {
             notified_time = period;
-            changed       = false;
+            changed = false;
 
             // uart irq enable
             _change_status(&axon_state, STATE_NOTIFY);
             DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, UART_IRQ_OUT_PIN);
         }
-#endif  // AXON_BOARD (SOMA UARTテスト中は既存UART処理を無効化)
-
 
         // ==========================================
         // 1ms周期
