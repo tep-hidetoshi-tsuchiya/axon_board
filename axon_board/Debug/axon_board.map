@@ -1,18 +1,18 @@
 ******************************************************************************
             TI ARM Clang Linker PC v4.0.3                      
 ******************************************************************************
->> Linked Wed Nov 26 16:55:34 2025
+>> Linked Wed Nov 26 21:32:39 2025
 
 OUTPUT FILE NAME:   <axon_board.out>
-ENTRY POINT SYMBOL: "_c_int00_noargs"  address: 00004f15
+ENTRY POINT SYMBOL: "_c_int00_noargs"  address: 00006a31
 
 
 MEMORY CONFIGURATION
 
          name            origin    length      used     unused   attr    fill
 ----------------------  --------  ---------  --------  --------  ----  --------
-  FLASH                 00000000   00020000  00006a60  000195a0  R  X
-  SRAM                  20200000   00008000  0000108d  00006f73  RW X
+  FLASH                 00000000   00020000  00007b70  00018490  R  X
+  SRAM                  20200000   00008000  00001981  0000667f  RW X
   BCR_CONFIG            41c00000   000000ff  00000000  000000ff  R   
   BSL_CONFIG            41c00100   00000080  00000000  00000080  R   
 
@@ -21,15 +21,15 @@ SEGMENT ALLOCATION MAP
 
 run origin  load origin   length   init length attrs members
 ----------  ----------- ---------- ----------- ----- -------
-00000000    00000000    00006a60   00006a60    r-x
+00000000    00000000    00007b70   00007b70    r-x
   00000000    00000000    000000c0   000000c0    r-- .intvecs
-  000000c0    000000c0    000059c0   000059c0    r-x .text
-  00005a80    00005a80    00000f30   00000f30    r-- .rodata
-  000069b0    000069b0    000000b0   000000b0    r-- .cinit
-20200000    20200000    00000e90   00000000    rw-
-  20200000    20200000    00000800   00000000    rw- .sysmem
-  20200800    20200800    0000036d   00000000    rw- .data
-  20200b70    20200b70    00000320   00000000    rw- .bss
+  000000c0    000000c0    00007590   00007590    r-x .text
+  00007650    00007650    00000470   00000470    r-- .rodata
+  00007ac0    00007ac0    000000b0   000000b0    r-- .cinit
+20200000    20200000    00001788   00000000    rw-
+  20200000    20200000    00000c39   00000000    rw- .data
+  20200c40    20200c40    00000800   00000000    rw- .sysmem
+  20201440    20201440    00000348   00000000    rw- .bss
 20207e00    20207e00    00000200   00000000    rw-
   20207e00    20207e00    00000200   00000000    rw- .stack
 
@@ -42,483 +42,486 @@ section   page    origin      length       input sections
 .intvecs   0    00000000    000000c0     
                   00000000    000000c0     startup_mspm0g350x_ticlang.o (.intvecs)
 
-.text      0    000000c0    000059c0     
-                  000000c0    00000868     libc.a : _printfi.c.obj (.text:__TI_printfi_nofloat)
-                  00000928    0000066c     soma_uart_test.o (.text.axon_uart_loopback_test)
-                  00000f94    00000614     soma_uart_test.o (.text.axon_36byte_frame_test)
-                  000015a8    000002d4     msp_peripheral_config.o (.text.SYSCFG_DL_GPIO_init)
-                  0000187c    0000025c     axon_routine.o (.text.axon_routine_main)
-                  00001ad8    000001dc     UARTMSPM0.o (.text.UARTMSP_enable)
-                  00001cb4    000001b4     axon_routine.o (.text.rgb_fade_step)
-                  00001e68    000001b0     isr.o (.text.GROUP1_IRQHandler)
-                  00002018    00000190     UARTMSPM0.o (.text.UARTMSP_dmaRx)
-                  000021a8    0000015c     isr.o (.text.UART0_IRQHandler)
-                  00002304    00000144     UART.o (.text.UART_open)
-                  00002448    00000114     libc.a : memory.c.obj (.text.aligned_alloc)
-                  0000255c    00000104     driverlib.a : dl_timer.o (.text.DL_Timer_initFourCCPWMMode)
-                  00002660    00000100     UART.o (.text.UART_writeCallback)
-                  00002760    000000f8     libc.a : fputs.c.obj (.text.fputs)
-                  00002858    000000e8     msp_peripheral_config.o (.text._msp_peripheral_pwm_init)
-                  00002940    000000e8     libc.a : memory.c.obj (.text.free)
-                  00002a28    000000e0            : setvbuf.c.obj (.text.setvbuf)
-                  00002b08    000000cc     DMAMSPM0.o (.text.DMAMSPM0_setupTransfer)
-                  00002bd4    000000b2     UART.o (.text.UART_writeBufferedMode)
-                  00002c86    000000aa     UART.o (.text.UART_readBufferedMode)
-                  00002d30    000000a8     DMAMSPM0.o (.text.DMAMSPM0_hwiFxn)
-                  00002dd8    000000a8     UARTMSPM0.o (.text.UARTMSP_disable)
-                  00002e80    000000a8     UART.o (.text.UART_readCancel)
-                  00002f28    000000a6     UARTMSPM0.o (.text.UARTMSP_enableInts)
-                  00002fce    000000a2     axon_routine.o (.text._check_debounce_complete)
-                  00003070    000000a2     libclang_rt.builtins.a : udivmoddi4.S.obj (.text)
-                  00003112    00000002     isr.o (.text.GROUP0_IRQHandler)
-                  00003114    000000a0     msp_peripheral_config.o (.text.SYSCFG_DL_initPower)
-                  000031b4    0000009e     axon_routine.o (.text._set_segment_led)
-                  00003252    00000002     isr.o (.text.UART2_IRQHandler)
-                  00003254    0000009c     uart_packet.o (.text._init_uart_s2a)
-                  000032f0    0000009c     msp_peripheral_config.o (.text._msp_peripheral_uart_init)
-                  0000338c    0000009c     libc.a : fputc.c.obj (.text.fputc)
-                  00003428    00000098     DMAMSPM0.o (.text.DMAMSPM0_close)
-                  000034c0    00000098     axon_routine.o (.text.rgb_fade_init)
-                  00003558    0000008a     RingBuf.o (.text.RingBuf_putn)
-                  000035e2    0000000e     libc.a : memory.c.obj (.text.OUTLINED_FUNCTION_0)
-                  000035f0    00000088            : strcmp-armv6m.S.obj (.text:strcmp)
-                  00003678    00000080     driverlib.a : dl_uart.o (.text.DL_UART_configBaudRate)
-                  000036f8    00000080     DMAMSPM0.o (.text.DMAMSPM0_init)
-                  00003778    00000080     soma_uart_test.o (.text.crc16_tep)
-                  000037f8    0000007e     UART.o (.text.UART_readCallback)
-                  00003876    00000002     libclang_rt.builtins.a : aeabi_div0.c.obj (.text.__aeabi_idiv0)
-                  00003878    0000007c     libc.a : fclose.c.obj (.text.__TI_closefile)
-                  000038f4    0000007c            : copy_decompress_lzss.c.obj (.text:decompress:lzss)
-                  00003970    00000078     UARTMSPM0.o (.text.UARTMSP_getRxData)
-                  000039e8    00000078     UART.o (.text.UART_readFullFeatured)
-                  00003a60    00000078     UART.o (.text.UART_writeFullFeatured)
-                  00003ad8    00000076     RingBuf.o (.text.RingBuf_put)
-                  00003b4e    00000002     libclang_rt.builtins.a : aeabi_div0.c.obj (.text.__aeabi_ldiv0)
-                  00003b50    0000006c     libsysbm.a : hostlseek.c.obj (.text.HOSTlseek)
-                  00003bbc    0000006c                : hostrename.c.obj (.text.HOSTrename)
-                  00003c28    0000006c     RingBuf.o (.text.RingBuf_getn)
-                  00003c94    0000006c     RingBuf.o (.text.RingBuf_putAdvance)
-                  00003d00    0000006c     axon_routine.o (.text._change_status)
-                  00003d6c    0000006c     libc.a : fseek.c.obj (.text.fseeko)
-                  00003dd8    0000006c            : getdevice.c.obj (.text.getdevice)
-                  00003e44    00000068     axon_routine.o (.text.rgb_led_fade_update)
-                  00003eac    00000064     libc.a : _io_perm.c.obj (.text.__TI_wrt_ok)
-                  00003f10    00000064     uart_packet.o (.text.init_uart_ports)
-                  00003f74    00000064     libc.a : memory.c.obj (.text.split)
-                  00003fd8    00000062     uart_packet.o (.text.read_callback_fxn)
-                  0000403a    00000002     msp_peripheral_config.o (.text._msp_peripheral_spi_init)
-                  0000403c    00000060     libsysbm.a : hostopen.c.obj (.text.HOSTopen)
-                  0000409c    00000060     soma_uart_test.o (.text.__NVIC_GetPriority)
-                  000040fc    0000005c     libc.a : printf.c.obj (.text.printf)
-                  00004158    00000058     libsysbm.a : hostread.c.obj (.text.HOSTread)
-                  000041b0    00000058                : hostwrite.c.obj (.text.HOSTwrite)
-                  00004208    00000054     msp_peripheral_config.o (.text._msp_peripheral_gpio_init_for_dipsw)
-                  0000425c    00000052     libc.a : fflush.c.obj (.text.__TI_doflush)
-                  000042ae    00000052     uart_packet.o (.text.write_callback_fxn)
-                  00004300    00000050     libsysbm.a : close.c.obj (.text.close)
-                  00004350    0000004c     driverlib.a : dl_dma.o (.text.DL_DMA_initChannel)
-                  0000439c    0000004a     RingBuf.o (.text.RingBuf_putPointer)
-                  000043e6    0000004a     main.o (.text.main)
-                  00004430    00000048     driverlib.a : dl_uart.o (.text.DL_UART_init)
-                  00004478    00000048     libsysbm.a : hostclose.c.obj (.text.HOSTclose)
-                  000044c0    00000048                : hostunlink.c.obj (.text.HOSTunlink)
-                  00004508    00000048     msp_peripheral_config.o (.text._msp_peripheral_gpio_init_for_hw_ver)
-                  00004550    00000040     ti_msp_dl_config.o (.text.SYSCFG_DL_TRNG_init)
-                  00004590    00000040     libclang_rt.builtins.a : aeabi_uidivmod.S.obj (.text.__aeabi_uidivmod)
-                  000045d0    00000040     libc.a : atoi.c.obj (.text.atoi)
-                  00004610    0000003c     msp_peripheral_config.o (.text.DL_Timer_setCounterControl)
-                  0000464c    0000003c     axon_routine.o (.text._set_segment_leds)
-                  00004688    0000003c     libc.a : autoinit.c.obj (.text:__TI_auto_init_nobinit_nopinit)
-                  000046c4    0000003a     libclang_rt.builtins.a : muldsi3.S.obj (.text.__muldsi3)
-                  000046fe    00000038     ti_msp_dl_config.o (.text.DL_CRC_init)
-                  00004736    00000002     libc.a : _lock.c.obj (.text._nop)
-                  00004738    00000038     msp_peripheral_config.o (.text.DL_GPIO_initPeripheralOutputFunctionFeatures)
-                  00004770    00000038     soma_uart_test.o (.text.__NVIC_GetEnableIRQ)
-                  000047a8    00000038     soma_uart_test.o (.text.__NVIC_GetPendingIRQ)
-                  000047e0    00000034     main.o (.text.DL_FlashCTL_executeClearStatus)
-                  00004814    00000034     msp_peripheral_config.o (.text.DL_GPIO_initDigitalInputFeatures)
-                  00004848    00000034     UARTMSPM0.o (.text.__NVIC_DisableIRQ)
-                  0000487c    00000034     libc.a : fopen.c.obj (.text.__TI_cleanup)
-                  000048b0    00000034     libsysbm.a : trgmsg.c.obj (.text.__TI_readmsg)
-                  000048e4    00000034                : trgmsg.c.obj (.text.__TI_writemsg)
-                  00004918    00000034     libc.a : exit.c.obj (.text.exit)
-                  0000494c    00000034            : getdevice.c.obj (.text.finddevice)
-                  00004980    00000030     DMAMSPM0.o (.text.DL_DMA_setTransferSize)
-                  000049b0    00000030     msp_peripheral_config.o (.text.DL_GPIO_initDigitalOutputFeatures)
-                  000049e0    00000030     axon_routine.o (.text.DL_GPIO_writePinsVal)
-                  00004a10    00000030     axon_routine.o (.text.set_led_b_pwm)
-                  00004a40    00000030     axon_routine.o (.text.set_led_g_pwm)
-                  00004a70    00000030     axon_routine.o (.text.set_led_r_pwm)
-                  00004aa0    00000030     axon_routine.o (.text.set_led_rgb_pwm)
-                  00004ad0    0000002e     ti_msp_dl_config.o (.text.DL_AES_init)
-                  00004afe    0000002e     RingBuf.o (.text.RingBuf_construct)
-                  00004b2c    0000002e     UART.o (.text.UART_readBuffered)
-                  00004b5a    0000002e     UART.o (.text.UART_writeBuffered)
-                  00004b88    0000002c     msp_peripheral_config.o (.text.SYSCFG_DL_init)
-                  00004bb4    0000002c     UART.o (.text.UART_close)
-                  00004be0    0000002c     main.o (.text.__NVIC_ClearPendingIRQ)
-                  00004c0c    0000002c     UARTMSPM0.o (.text.__NVIC_EnableIRQ)
-                  00004c38    0000002c     main.o (.text.__NVIC_EnableIRQ)
-                  00004c64    0000002c     msp_peripheral_config.o (.text.__NVIC_EnableIRQ)
-                  00004c90    0000002c     libsysbm.a : unlink.c.obj (.text.unlink)
-                  00004cbc    00000028     UARTMSPM0.o (.text.DL_Common_updateReg)
-                  00004ce4    00000028     msp_peripheral_config.o (.text.DL_Common_updateReg)
-                  00004d0c    00000028     ti_msp_dl_config.o (.text.DL_Common_updateReg)
-                  00004d34    00000028     DMAMSPM0.o (.text.DL_DMA_setDestAddr)
-                  00004d5c    00000028     DMAMSPM0.o (.text.DL_DMA_setSrcAddr)
-                  00004d84    00000028     msp_peripheral_config.o (.text.DL_SYSTICK_init)
-                  00004dac    00000028     ti_msp_dl_config.o (.text.DL_TRNG_setDecimationRate)
-                  00004dd4    00000028     UARTMSPM0.o (.text.DL_UART_setRXFIFOThreshold)
-                  00004dfc    00000028     msp_peripheral_config.o (.text.DL_UART_setRXFIFOThreshold)
-                  00004e24    00000028     UARTMSPM0.o (.text.DL_UART_setTXFIFOThreshold)
-                  00004e4c    00000028     msp_peripheral_config.o (.text.DL_UART_setTXFIFOThreshold)
-                  00004e74    00000028     ti_msp_dl_config.o (.text.SYSCFG_DL_CRC_init)
-                  00004e9c    00000028     libc.a : memory.c.obj (.text.free_list_insert)
-                  00004ec4    00000028     libsysbm.a : lseek.c.obj (.text.lseek)
-                  00004eec    00000028                : write.c.obj (.text.write)
-                  00004f14    00000028     libc.a : boot_cortex_m.c.obj (.text:_c_int00_noargs)
-                  00004f3c    00000026     DMAMSPM0.o (.text.DL_DMA_enableChannel)
-                  00004f62    00000026     DMAMSPM0.o (.text.DL_DMA_startTransfer)
-                  00004f88    00000026     UARTMSPM0.o (.text.UARTMSP_initBuffers)
-                  00004fae    00000002     --HOLE-- [fill = 0]
-                  00004fb0    00000024     ti_msp_dl_config.o (.text.DL_CRC_setSeed16)
-                  00004fd4    00000024     ti_msp_dl_config.o (.text.DL_TRNG_sendCommand)
-                  00004ff8    00000024     libclang_rt.builtins.a : muldi3.S.obj (.text.__muldi3)
-                  0000501c    00000024     axon_routine.o (.text._set_solenoid_pins)
-                  00005040    00000022     libc.a : memccpy.c.obj (.text.memccpy)
-                  00005062    00000002     --HOLE-- [fill = 0]
-                  00005064    00000020     UARTMSPM0.o (.text.DL_GPIO_initPeripheralInputFunction)
-                  00005084    00000020     msp_peripheral_config.o (.text.DL_GPIO_initPeripheralInputFunction)
-                  000050a4    00000020     UART.o (.text.UART_Params_init)
-                  000050c4    0000001e     UARTMSPM0.o (.text.UARTMSP_txChar)
-                  000050e2    00000002     --HOLE-- [fill = 0]
-                  000050e4    0000001e     libclang_rt.builtins.a : ashldi3.S.obj (.text.__ashldi3)
-                  00005102    00000002     --HOLE-- [fill = 0]
-                  00005104    0000001c     msp_peripheral_config.o (.text.DL_GPIO_clearInterruptStatus)
-                  00005120    0000001c     msp_peripheral_config.o (.text.DL_GPIO_enableInterrupt)
-                  0000513c    0000001c     msp_peripheral_config.o (.text.DL_GPIO_initDigitalInput)
-                  00005158    0000001c     UARTMSPM0.o (.text.DL_GPIO_initPeripheralOutputFunction)
-                  00005174    0000001c     axon_routine.o (.text.DL_GPIO_initPeripheralOutputFunction)
-                  00005190    0000001c     msp_peripheral_config.o (.text.DL_GPIO_initPeripheralOutputFunction)
-                  000051ac    0000001c     msp_peripheral_config.o (.text.DL_GPIO_setLowerPinsPolarity)
-                  000051c8    0000001c     isr.o (.text.DL_Interrupt_getPendingGroup)
-                  000051e4    0000001c     ti_msp_dl_config.o (.text.DL_SYSCTL_setSYSOSCFreq)
-                  00005200    0000001c     driverlib.a : dl_timer.o (.text.DL_Timer_setCaptCompUpdateMethod)
-                  0000521c    0000001c                 : dl_timer.o (.text.DL_Timer_setClockConfig)
-                  00005238    0000001c     UARTMSPM0.o (.text.DL_UART_disableInterrupt)
-                  00005254    0000001c     UARTMSPM0.o (.text.DL_UART_enableInterrupt)
-                  00005270    0000001c     msp_peripheral_config.o (.text.DL_UART_enableInterrupt)
-                  0000528c    0000001c     libc.a : memory.c.obj (.text.free_list_remove)
-                  000052a8    00000018     msp_peripheral_config.o (.text.DL_AES_enablePower)
-                  000052c0    00000018     msp_peripheral_config.o (.text.DL_AES_reset)
-                  000052d8    00000018     msp_peripheral_config.o (.text.DL_CRC_enablePower)
-                  000052f0    00000018     msp_peripheral_config.o (.text.DL_CRC_reset)
-                  00005308    00000018     DMAMSPM0.o (.text.DL_DMA_clearInterruptStatus)
-                  00005320    00000018     msp_peripheral_config.o (.text.DL_GPIO_enableOutput)
-                  00005338    00000018     msp_peripheral_config.o (.text.DL_GPIO_enablePower)
-                  00005350    00000018     axon_routine.o (.text.DL_GPIO_initDigitalOutput)
-                  00005368    00000018     msp_peripheral_config.o (.text.DL_GPIO_reset)
-                  00005380    00000018     axon_routine.o (.text.DL_GPIO_setPins)
-                  00005398    00000018     soma_uart_test.o (.text.DL_GPIO_setPins)
-                  000053b0    00000018     msp_peripheral_config.o (.text.DL_GPIO_setUpperPinsPolarity)
-                  000053c8    00000018     axon_routine.o (.text.DL_GPIO_togglePins)
-                  000053e0    00000018     ti_msp_dl_config.o (.text.DL_SYSCTL_setBORThreshold)
-                  000053f8    00000018     ti_msp_dl_config.o (.text.DL_TRNG_clearInterruptStatus)
-                  00005410    00000018     msp_peripheral_config.o (.text.DL_TRNG_enablePower)
-                  00005428    00000018     ti_msp_dl_config.o (.text.DL_TRNG_isCommandDone)
-                  00005440    00000018     msp_peripheral_config.o (.text.DL_TRNG_reset)
-                  00005458    00000018     ti_msp_dl_config.o (.text.DL_TRNG_setClockDivider)
-                  00005470    00000018     msp_peripheral_config.o (.text.DL_Timer_enablePower)
-                  00005488    00000018     msp_peripheral_config.o (.text.DL_Timer_reset)
-                  000054a0    00000018     driverlib.a : dl_timer.o (.text.DL_Timer_setCaptureCompareOutCtl)
-                  000054b8    00000018     UARTMSPM0.o (.text.DL_UART_clearInterruptStatus)
-                  000054d0    00000018     UARTMSPM0.o (.text.DL_UART_enableDMAReceiveEvent)
-                  000054e8    00000018     UARTMSPM0.o (.text.DL_UART_enableFIFOs)
-                  00005500    00000018     msp_peripheral_config.o (.text.DL_UART_enableFIFOs)
-                  00005518    00000018     UARTMSPM0.o (.text.DL_UART_enablePower)
-                  00005530    00000018     msp_peripheral_config.o (.text.DL_UART_enablePower)
-                  00005548    00000018     soma_uart_test.o (.text.DL_UART_isBusy)
-                  00005560    00000018     UARTMSPM0.o (.text.DL_UART_isRXFIFOEmpty)
-                  00005578    00000018     isr.o (.text.DL_UART_isRXFIFOEmpty)
-                  00005590    00000018     soma_uart_test.o (.text.DL_UART_isRXFIFOEmpty)
-                  000055a8    00000018     soma_uart_test.o (.text.DL_UART_isTXFIFOEmpty)
-                  000055c0    00000018     UARTMSPM0.o (.text.DL_UART_reset)
-                  000055d8    00000018     msp_peripheral_config.o (.text.DL_UART_reset)
-                  000055f0    00000018     axon_routine.o (.text.turn_off_led_b_gpio)
-                  00005608    00000018     axon_routine.o (.text.turn_off_led_g_gpio)
-                  00005620    00000018     axon_routine.o (.text.turn_off_led_r_gpio)
-                  00005638    00000016     DMAMSPM0.o (.text.DL_DMA_disableRoundRobinPriority)
-                  0000564e    00000016     DMAMSPM0.o (.text.DL_DMA_enableRoundRobinPriority)
-                  00005664    00000016     isr.o (.text.DL_GPIO_readPins)
-                  0000567a    00000016     UARTMSPM0.o (.text.DL_UART_disable)
-                  00005690    00000016     UARTMSPM0.o (.text.DL_UART_enable)
-                  000056a6    00000016     msp_peripheral_config.o (.text.DL_UART_enable)
-                  000056bc    00000016     soma_uart_test.o (.text.DL_UART_transmitData)
-                  000056d2    00000016     ti_msp_dl_config.o (.text.SYSCFG_DL_SYSCTL_init)
-                  000056e8    00000016     libc.a : copy_zero_init.c.obj (.text:decompress:ZI:__TI_zero_init_nomemset)
-                  000056fe    00000014     DMAMSPM0.o (.text.DL_DMA_isRoundRobinPriorityEnabled)
-                  00005712    00000014     axon_routine.o (.text.DL_GPIO_clearPins)
-                  00005726    00000014     msp_peripheral_config.o (.text.DL_GPIO_clearPins)
-                  0000573a    00000014     soma_uart_test.o (.text.DL_GPIO_clearPins)
-                  0000574e    00000002     --HOLE-- [fill = 0]
-                  00005750    00000014     msp_peripheral_config.o (.text.DL_Timer_enableClock)
-                  00005764    00000014     msp_peripheral_config.o (.text.DL_Timer_setCCPDirection)
-                  00005778    00000014     UARTMSPM0.o (.text.DL_UART_receiveData)
-                  0000578c    00000014     isr.o (.text.DL_UART_receiveData)
-                  000057a0    00000014     ti_msp_dl_config.o (.text.SYSCFG_DL_AES_init)
-                  000057b4    00000014     msp_peripheral_config.o (.text.SYSCFG_DL_SYSTICK_init)
-                  000057c8    00000014     libclang_rt.builtins.a : aeabi_uldivmod.S.obj (.text.__aeabi_uldivmod)
-                  000057dc    00000012     DMAMSPM0.o (.text.DL_DMA_getPendingInterrupt)
-                  000057ee    00000012     isr.o (.text.DL_GPIO_getPendingInterrupt)
-                  00005800    00000012     isr.o (.text.DL_UART_getPendingInterrupt)
-                  00005812    00000012     driverlib.a : dl_uart.o (.text.DL_UART_setClockConfig)
-                  00005824    00000012     UART.o (.text.UART_callbackObject)
-                  00005836    00000012     UARTMSPM0.o (.text.UART_callbackObject)
-                  00005848    00000012     UART.o (.text.UART_eventCallbackObject)
-                  0000585a    00000012     UARTMSPM0.o (.text.UART_eventCallbackObject)
-                  0000586c    00000012     libc.a : memcpy16.S.obj (.text:TI_memcpy_small)
-                  0000587e    00000012            : copy_decompress_none.c.obj (.text:decompress:none)
-                  00005890    00000010     main.o (.text.DL_SYSCTL_disableSleepOnExit)
-                  000058a0    00000010     msp_peripheral_config.o (.text.DL_SYSTICK_enable)
-                  000058b0    00000010     msp_peripheral_config.o (.text.DL_SYSTICK_enableInterrupt)
-                  000058c0    00000010     driverlib.a : dl_timer.o (.text.DL_Timer_setCaptureCompareValue)
-                  000058d0    00000010     RingBuf.o (.text.RingBuf_space)
-                  000058e0    00000010     UARTMSPM0.o (.text.RingBuf_space)
-                  000058f0    00000010     isr.o (.text.SysTick_Handler)
-                  00005900    00000010     axon_routine.o (.text.restore_led_rgb_pwm)
-                  00005910    00000010     axon_routine.o (.text.turn_off_led_rgb_gpio)
-                  00005920    00000010     libc.a : wcslen.c.obj (.text.wcslen)
-                  00005930    0000000e     driver_config.o (.text.UARTMSP_eventCallback)
-                  0000593e    00000002     --HOLE-- [fill = 0]
-                  00005940    0000000e     libclang_rt.builtins.a : aeabi_memset.S.obj (.text.__aeabi_memset)
-                  0000594e    0000000e     libsysbm.a : hostrename.c.obj (.text.strcpy)
-                  0000595c    0000000e     libc.a : _printfi.c.obj (.text.strlen)
-                  0000596a    0000000e     libsysbm.a : hostrename.c.obj (.text.strlen)
-                  00005978    0000000e     libc.a : memset16.S.obj (.text:TI_memset_small)
-                  00005986    0000000c     UARTMSPM0.o (.text.UART_HWAttrs_Ptr)
-                  00005992    0000000c     UART.o (.text.UART_Obj_Ptr)
-                  0000599e    0000000c     UARTMSPM0.o (.text.UART_Obj_Ptr)
-                  000059aa    0000000c     UART.o (.text.UART_buffersObject)
-                  000059b6    0000000c     UARTMSPM0.o (.text.UART_buffersObject)
-                  000059c2    00000002     --HOLE-- [fill = 0]
-                  000059c4    0000000c     libclang_rt.builtins.a : aeabi_memset.S.obj (.text.__aeabi_memclr)
-                  000059d0    0000000c     isr.o (.text.get_systick_count_ms)
-                  000059dc    0000000c     libc.a : memory.c.obj (.text.malloc)
-                  000059e8    0000000c     axon_routine.o (.text.restore_led_b_pwm)
-                  000059f4    0000000c     axon_routine.o (.text.restore_led_g_pwm)
-                  00005a00    0000000c     axon_routine.o (.text.restore_led_r_pwm)
-                  00005a0c    0000000a     driverlib.a : dl_common.o (.text.DL_Common_delayCycles)
-                  00005a16    00000002     --HOLE-- [fill = 0]
-                  00005a18    00000008     libc.a : aeabi_portable.c.obj (.text.__aeabi_errno_addr)
-                  00005a20    00000008     libclang_rt.builtins.a : aeabi_memcpy.S.obj (.text.__aeabi_memcpy)
-                  00005a28    00000008     libc.a : printf.c.obj (.text._outc)
-                  00005a30    00000008            : printf.c.obj (.text._outs)
-                  00005a38    00000008            : fseek.c.obj (.text.fseek)
-                  00005a40    00000008     libsysbm.a : remove.c.obj (.text.remove)
-                  00005a48    00000006     libc.a : exit.c.obj (.text:abort)
-                  00005a4e    00000004     startup_mspm0g350x_ticlang.o (.text.Default_Handler)
-                  00005a52    00000004     libsysbm.a : hostexit.c.obj (.text.HOSTexit)
-                  00005a56    00000004     startup_mspm0g350x_ticlang.o (.text.Reset_Handler)
-                  00005a5a    00000002     --HOLE-- [fill = 0]
-                  00005a5c    00000010     libc.a : boot_cortex_m.c.obj (.tramp._c_int00_noargs.1)
-                  00005a6c    00000004     uart_packet.o (.text._init_uart_t2s)
-                  00005a70    00000004     libc.a : pre_init.c.obj (.text._system_pre_init)
-                  00005a74    0000000c     --HOLE-- [fill = 0]
+.text      0    000000c0    00007590     
+                  000000c0    000009d0     libc.a : _printfi.c.obj (.text:__TI_printfi)
+                  00000a90    000004d4     axon_routine.o (.text.axon_routine_main)
+                  00000f64    00000388     s2a_packet.o (.text.axon_handle_chkirq)
+                  000012ec    000002d4     msp_peripheral_config.o (.text.SYSCFG_DL_GPIO_init)
+                  000015c0    000002b0     s2a_packet.o (.text.axon_handle_setaxon)
+                  00001870    00000220     libc.a : _printfi.c.obj (.text._pconv_a)
+                  00001a90    000001e0     s2a_packet.o (.text.axon_handle_codepkt)
+                  00001c70    000001dc     UARTMSPM0.o (.text.UARTMSP_enable)
+                  00001e4c    000001dc     libc.a : _printfi.c.obj (.text._pconv_g)
+                  00002028    000001c4     isr.o (.text.UART0_IRQHandler)
+                  000021ec    000001b4     axon_routine.o (.text.rgb_fade_step)
+                  000023a0    000001b0     isr.o (.text.GROUP1_IRQHandler)
+                  00002550    00000194     uart_packet.o (.text.receive_uart_s2a_packet)
+                  000026e4    00000192     libclang_rt.builtins.a : adddf3.S.obj (.text.adddf3_subdf3)
+                  00002876    00000002     isr.o (.text.GROUP0_IRQHandler)
+                  00002878    00000190     UARTMSPM0.o (.text.UARTMSP_dmaRx)
+                  00002a08    00000144     UART.o (.text.UART_open)
+                  00002b4c    0000013c     libc.a : _printfi.c.obj (.text.fcvt)
+                  00002c88    00000120            : _printfi.c.obj (.text._pconv_e)
+                  00002da8    00000114            : memory.c.obj (.text.aligned_alloc)
+                  00002ebc    0000010c     libclang_rt.builtins.a : divdf3.S.obj (.text.__divdf3)
+                  00002fc8    00000108     s2a_packet.o (.text.axon_handle_errchk)
+                  000030d0    00000104     driverlib.a : dl_timer.o (.text.DL_Timer_initFourCCPWMMode)
+                  000031d4    00000104     soma_axon_comm_test.o (.text.get_command_name)
+                  000032d8    00000100     UART.o (.text.UART_writeCallback)
+                  000033d8    000000f8     libc.a : fputs.c.obj (.text.fputs)
+                  000034d0    000000f0     soma_axon_comm_test.o (.text.axon_test_record_command)
+                  000035c0    000000ec     s2a_packet.o (.text.axon_handle_afwup)
+                  000036ac    000000ea     s2a_packet.o (.text.axon_handle_nop)
+                  00003796    00000002     isr.o (.text.UART2_IRQHandler)
+                  00003798    000000e8     msp_peripheral_config.o (.text._msp_peripheral_pwm_init)
+                  00003880    000000e8     libc.a : memory.c.obj (.text.free)
+                  00003968    000000e4     libclang_rt.builtins.a : muldf3.S.obj (.text.__muldf3)
+                  00003a4c    000000e0     libc.a : setvbuf.c.obj (.text.setvbuf)
+                  00003b2c    000000d8            : s_scalbn.c.obj (.text.scalbn)
+                  00003c04    000000cc     DMAMSPM0.o (.text.DMAMSPM0_setupTransfer)
+                  00003cd0    000000bc     s2a_packet.o (.text.axon_handle_setokey)
+                  00003d8c    000000b4     s2a_packet.o (.text.axon_status_compose_bits)
+                  00003e40    000000b2     UART.o (.text.UART_writeBufferedMode)
+                  00003ef2    000000aa     UART.o (.text.UART_readBufferedMode)
+                  00003f9c    000000a8     DMAMSPM0.o (.text.DMAMSPM0_hwiFxn)
+                  00004044    000000a8     UARTMSPM0.o (.text.UARTMSP_disable)
+                  000040ec    000000a8     UART.o (.text.UART_readCancel)
+                  00004194    000000a8     uart_packet.o (.text.send_uart_s2a_packet)
+                  0000423c    000000a6     UARTMSPM0.o (.text.UARTMSP_enableInts)
+                  000042e2    000000a2     axon_routine.o (.text._check_debounce_complete)
+                  00004384    000000a2     libclang_rt.builtins.a : udivmoddi4.S.obj (.text)
+                  00004426    00000002                            : aeabi_div0.c.obj (.text.__aeabi_idiv0)
+                  00004428    000000a0     msp_peripheral_config.o (.text.SYSCFG_DL_initPower)
+                  000044c8    0000009e     axon_routine.o (.text._set_segment_led)
+                  00004566    00000002     libclang_rt.builtins.a : aeabi_div0.c.obj (.text.__aeabi_ldiv0)
+                  00004568    0000009c     uart_packet.o (.text._init_uart_s2a)
+                  00004604    0000009c     msp_peripheral_config.o (.text._msp_peripheral_uart_init)
+                  000046a0    0000009c     libc.a : fputc.c.obj (.text.fputc)
+                  0000473c    00000098     DMAMSPM0.o (.text.DMAMSPM0_close)
+                  000047d4    00000098     axon_routine.o (.text.rgb_fade_init)
+                  0000486c    0000008a     RingBuf.o (.text.RingBuf_putn)
+                  000048f6    00000002     msp_peripheral_config.o (.text._msp_peripheral_spi_init)
+                  000048f8    00000088     soma_axon_comm_test.o (.text.axon_test_record_response)
+                  00004980    00000088     s2a_packet.o (.text.crc16_tep)
+                  00004a08    00000008     libc.a : aeabi_portable.c.obj (.text.__aeabi_errno_addr)
+                  00004a10    00000088            : strcmp-armv6m.S.obj (.text:strcmp)
+                  00004a98    00000080     driverlib.a : dl_uart.o (.text.DL_UART_configBaudRate)
+                  00004b18    00000080     DMAMSPM0.o (.text.DMAMSPM0_init)
+                  00004b98    00000080     UARTMSPM0.o (.text.UARTMSP_dmaStopRx)
+                  00004c18    0000007e     UART.o (.text.UART_readCallback)
+                  00004c96    00000002     libc.a : _lock.c.obj (.text._nop)
+                  00004c98    0000007c            : fclose.c.obj (.text.__TI_closefile)
+                  00004d14    0000007c            : copy_decompress_lzss.c.obj (.text:decompress:lzss)
+                  00004d90    00000078     UARTMSPM0.o (.text.UARTMSP_getRxData)
+                  00004e08    00000078     UART.o (.text.UART_readFullFeatured)
+                  00004e80    00000078     UART.o (.text.UART_writeFullFeatured)
+                  00004ef8    00000076     RingBuf.o (.text.RingBuf_put)
+                  00004f6e    00000002     --HOLE-- [fill = 0]
+                  00004f70    00000074     libclang_rt.builtins.a : comparedf2.c.obj (.text.__gedf2)
+                  00004fe4    0000006c     libsysbm.a : hostlseek.c.obj (.text.HOSTlseek)
+                  00005050    0000006c                : hostrename.c.obj (.text.HOSTrename)
+                  000050bc    0000006c     RingBuf.o (.text.RingBuf_getn)
+                  00005128    0000006c     RingBuf.o (.text.RingBuf_putAdvance)
+                  00005194    0000006c     axon_routine.o (.text._change_status)
+                  00005200    0000006c     libc.a : fseek.c.obj (.text.fseeko)
+                  0000526c    0000006c            : getdevice.c.obj (.text.getdevice)
+                  000052d8    00000068     libclang_rt.builtins.a : comparedf2.c.obj (.text.__ledf2)
+                  00005340    00000068     axon_routine.o (.text._parse_uart_terminal_status_data)
+                  000053a8    00000068     axon_routine.o (.text.rgb_led_fade_update)
+                  00005410    00000066     UART.o (.text.UART_read)
+                  00005476    00000066     UART.o (.text.UART_write)
+                  000054dc    00000066     libc.a : _printfi.c.obj (.text._mcpy)
+                  00005542    00000066     s2a_packet.o (.text.send_ack_frame)
+                  000055a8    00000064     libc.a : _io_perm.c.obj (.text.__TI_wrt_ok)
+                  0000560c    00000064     uart_packet.o (.text.init_uart_ports)
+                  00005670    00000064     libc.a : memory.c.obj (.text.split)
+                  000056d4    00000062     libclang_rt.builtins.a : aeabi_dcmp.S.obj (.text.__aeabi_dcmp)
+                  00005736    00000062     uart_packet.o (.text.read_callback_fxn)
+                  00005798    00000060     libsysbm.a : hostopen.c.obj (.text.HOSTopen)
+                  000057f8    0000005c     libc.a : s_frexp.c.obj (.text.frexp)
+                  00005854    0000005c            : printf.c.obj (.text.printf)
+                  000058b0    0000005a     axon_routine.o (.text._generate_uart_terminal_status_data)
+                  0000590a    00000002     --HOLE-- [fill = 0]
+                  0000590c    00000058     libsysbm.a : hostread.c.obj (.text.HOSTread)
+                  00005964    00000058                : hostwrite.c.obj (.text.HOSTwrite)
+                  000059bc    00000058     libc.a : _ltoa.c.obj (.text.__TI_ltoa)
+                  00005a14    00000058            : _printfi.c.obj (.text._pconv_f)
+                  00005a6c    00000056     libclang_rt.builtins.a : aeabi_idivmod.S.obj (.text.__aeabi_idivmod)
+                  00005ac2    00000002     --HOLE-- [fill = 0]
+                  00005ac4    00000054     msp_peripheral_config.o (.text._msp_peripheral_gpio_init_for_dipsw)
+                  00005b18    00000052     libc.a : fflush.c.obj (.text.__TI_doflush)
+                  00005b6a    00000052            : _printfi.c.obj (.text._ecpy)
+                  00005bbc    00000052     uart_packet.o (.text.write_callback_fxn)
+                  00005c0e    00000002     --HOLE-- [fill = 0]
+                  00005c10    00000050     libsysbm.a : close.c.obj (.text.close)
+                  00005c60    0000004e     RingBuf.o (.text.RingBuf_get)
+                  00005cae    00000002     --HOLE-- [fill = 0]
+                  00005cb0    0000004c     driverlib.a : dl_dma.o (.text.DL_DMA_initChannel)
+                  00005cfc    0000004a     RingBuf.o (.text.RingBuf_putPointer)
+                  00005d46    00000002     --HOLE-- [fill = 0]
+                  00005d48    0000004a     libclang_rt.builtins.a : fixdfsi.S.obj (.text.__fixdfsi)
+                  00005d92    0000004a     main.o (.text.main)
+                  00005ddc    00000048     driverlib.a : dl_uart.o (.text.DL_UART_init)
+                  00005e24    00000048     libsysbm.a : hostclose.c.obj (.text.HOSTclose)
+                  00005e6c    00000048                : hostunlink.c.obj (.text.HOSTunlink)
+                  00005eb4    00000048     uart_packet.o (.text._is_valid_uart_command)
+                  00005efc    00000048     msp_peripheral_config.o (.text._msp_peripheral_gpio_init_for_hw_ver)
+                  00005f44    00000044     DMAMSPM0.o (.text.DMAMSPM0_disableChannel)
+                  00005f88    00000044     uart_packet.o (.text.flush_uart_s2a_tx_buffer)
+                  00005fcc    00000044     s2a_packet.o (.text.send_nack_frame)
+                  00006010    00000040     ti_msp_dl_config.o (.text.SYSCFG_DL_TRNG_init)
+                  00006050    00000040     libclang_rt.builtins.a : aeabi_uidivmod.S.obj (.text.__aeabi_uidivmod)
+                  00006090    00000040     libc.a : atoi.c.obj (.text.atoi)
+                  000060d0    00000040     soma_axon_comm_test.o (.text.axon_test_record_crc_error)
+                  00006110    0000003c     msp_peripheral_config.o (.text.DL_Timer_setCounterControl)
+                  0000614c    0000003c     axon_routine.o (.text._set_segment_leds)
+                  00006188    0000003c     libc.a : autoinit.c.obj (.text:__TI_auto_init_nobinit_nopinit)
+                  000061c4    0000003a     libclang_rt.builtins.a : muldsi3.S.obj (.text.__muldsi3)
+                  000061fe    00000038     ti_msp_dl_config.o (.text.DL_CRC_init)
+                  00006236    00000002     --HOLE-- [fill = 0]
+                  00006238    00000038     msp_peripheral_config.o (.text.DL_GPIO_initPeripheralOutputFunctionFeatures)
+                  00006270    00000034     main.o (.text.DL_FlashCTL_executeClearStatus)
+                  000062a4    00000034     msp_peripheral_config.o (.text.DL_GPIO_initDigitalInputFeatures)
+                  000062d8    00000034     UARTMSPM0.o (.text.__NVIC_DisableIRQ)
+                  0000630c    00000034     libc.a : fopen.c.obj (.text.__TI_cleanup)
+                  00006340    00000034     libsysbm.a : trgmsg.c.obj (.text.__TI_readmsg)
+                  00006374    00000034                : trgmsg.c.obj (.text.__TI_writemsg)
+                  000063a8    00000034     libc.a : exit.c.obj (.text.exit)
+                  000063dc    00000034            : getdevice.c.obj (.text.finddevice)
+                  00006410    00000030     DMAMSPM0.o (.text.DL_DMA_setTransferSize)
+                  00006440    00000030     msp_peripheral_config.o (.text.DL_GPIO_initDigitalOutputFeatures)
+                  00006470    00000030     axon_routine.o (.text.DL_GPIO_writePinsVal)
+                  000064a0    00000030     s2a_packet.o (.text.DL_GPIO_writePinsVal)
+                  000064d0    00000030     libc.a : _printfi.c.obj (.text._fcpy)
+                  00006500    00000030     axon_routine.o (.text.set_led_b_pwm)
+                  00006530    00000030     axon_routine.o (.text.set_led_g_pwm)
+                  00006560    00000030     axon_routine.o (.text.set_led_r_pwm)
+                  00006590    00000030     axon_routine.o (.text.set_led_rgb_pwm)
+                  000065c0    0000002e     ti_msp_dl_config.o (.text.DL_AES_init)
+                  000065ee    0000002e     RingBuf.o (.text.RingBuf_construct)
+                  0000661c    0000002e     UART.o (.text.UART_readBuffered)
+                  0000664a    0000002e     UART.o (.text.UART_writeBuffered)
+                  00006678    0000002c     msp_peripheral_config.o (.text.SYSCFG_DL_init)
+                  000066a4    0000002c     UART.o (.text.UART_close)
+                  000066d0    0000002c     main.o (.text.__NVIC_ClearPendingIRQ)
+                  000066fc    0000002c     UARTMSPM0.o (.text.__NVIC_EnableIRQ)
+                  00006728    0000002c     main.o (.text.__NVIC_EnableIRQ)
+                  00006754    0000002c     msp_peripheral_config.o (.text.__NVIC_EnableIRQ)
+                  00006780    0000002c     libclang_rt.builtins.a : floatsidf.S.obj (.text.__floatsidf)
+                  000067ac    0000002c     libsysbm.a : unlink.c.obj (.text.unlink)
+                  000067d8    00000028     UARTMSPM0.o (.text.DL_Common_updateReg)
+                  00006800    00000028     msp_peripheral_config.o (.text.DL_Common_updateReg)
+                  00006828    00000028     ti_msp_dl_config.o (.text.DL_Common_updateReg)
+                  00006850    00000028     DMAMSPM0.o (.text.DL_DMA_setDestAddr)
+                  00006878    00000028     DMAMSPM0.o (.text.DL_DMA_setSrcAddr)
+                  000068a0    00000028     msp_peripheral_config.o (.text.DL_SYSTICK_init)
+                  000068c8    00000028     ti_msp_dl_config.o (.text.DL_TRNG_setDecimationRate)
+                  000068f0    00000028     UARTMSPM0.o (.text.DL_UART_setRXFIFOThreshold)
+                  00006918    00000028     msp_peripheral_config.o (.text.DL_UART_setRXFIFOThreshold)
+                  00006940    00000028     UARTMSPM0.o (.text.DL_UART_setTXFIFOThreshold)
+                  00006968    00000028     msp_peripheral_config.o (.text.DL_UART_setTXFIFOThreshold)
+                  00006990    00000028     ti_msp_dl_config.o (.text.SYSCFG_DL_CRC_init)
+                  000069b8    00000028     libc.a : memory.c.obj (.text.free_list_insert)
+                  000069e0    00000028     libsysbm.a : lseek.c.obj (.text.lseek)
+                  00006a08    00000028                : write.c.obj (.text.write)
+                  00006a30    00000028     libc.a : boot_cortex_m.c.obj (.text:_c_int00_noargs)
+                  00006a58    00000026     DMAMSPM0.o (.text.DL_DMA_disableChannel)
+                  00006a7e    00000026     DMAMSPM0.o (.text.DL_DMA_enableChannel)
+                  00006aa4    00000026     DMAMSPM0.o (.text.DL_DMA_startTransfer)
+                  00006aca    00000026     UARTMSPM0.o (.text.UARTMSP_initBuffers)
+                  00006af0    00000024     ti_msp_dl_config.o (.text.DL_CRC_setSeed16)
+                  00006b14    00000024     DMAMSPM0.o (.text.DL_DMA_getTransferSize)
+                  00006b38    00000024     ti_msp_dl_config.o (.text.DL_TRNG_sendCommand)
+                  00006b5c    00000024     libclang_rt.builtins.a : muldi3.S.obj (.text.__muldi3)
+                  00006b80    00000024     axon_routine.o (.text._set_solenoid_pins)
+                  00006ba4    00000022     libc.a : memccpy.c.obj (.text.memccpy)
+                  00006bc6    00000002     --HOLE-- [fill = 0]
+                  00006bc8    00000020     UARTMSPM0.o (.text.DL_GPIO_initPeripheralInputFunction)
+                  00006be8    00000020     msp_peripheral_config.o (.text.DL_GPIO_initPeripheralInputFunction)
+                  00006c08    00000020     RingBuf.o (.text.RingBuf_flush)
+                  00006c28    00000020     UART.o (.text.UART_Params_init)
+                  00006c48    0000001e     UARTMSPM0.o (.text.UARTMSP_txChar)
+                  00006c66    00000002     --HOLE-- [fill = 0]
+                  00006c68    0000001e     libclang_rt.builtins.a : ashldi3.S.obj (.text.__ashldi3)
+                  00006c86    00000002     --HOLE-- [fill = 0]
+                  00006c88    0000001c     msp_peripheral_config.o (.text.DL_GPIO_clearInterruptStatus)
+                  00006ca4    0000001c     msp_peripheral_config.o (.text.DL_GPIO_enableInterrupt)
+                  00006cc0    0000001c     msp_peripheral_config.o (.text.DL_GPIO_initDigitalInput)
+                  00006cdc    0000001c     UARTMSPM0.o (.text.DL_GPIO_initPeripheralOutputFunction)
+                  00006cf8    0000001c     axon_routine.o (.text.DL_GPIO_initPeripheralOutputFunction)
+                  00006d14    0000001c     msp_peripheral_config.o (.text.DL_GPIO_initPeripheralOutputFunction)
+                  00006d30    0000001c     msp_peripheral_config.o (.text.DL_GPIO_setLowerPinsPolarity)
+                  00006d4c    0000001c     isr.o (.text.DL_Interrupt_getPendingGroup)
+                  00006d68    0000001c     ti_msp_dl_config.o (.text.DL_SYSCTL_setSYSOSCFreq)
+                  00006d84    0000001c     driverlib.a : dl_timer.o (.text.DL_Timer_setCaptCompUpdateMethod)
+                  00006da0    0000001c                 : dl_timer.o (.text.DL_Timer_setClockConfig)
+                  00006dbc    0000001c     UARTMSPM0.o (.text.DL_UART_disableDMAReceiveEvent)
+                  00006dd8    0000001c     UARTMSPM0.o (.text.DL_UART_disableInterrupt)
+                  00006df4    0000001c     UARTMSPM0.o (.text.DL_UART_enableInterrupt)
+                  00006e10    0000001c     msp_peripheral_config.o (.text.DL_UART_enableInterrupt)
+                  00006e2c    0000001c     DMAMSPM0.o (.text.DMAMSPM0_getCurrTransferSize)
+                  00006e48    0000001c     libc.a : memory.c.obj (.text.free_list_remove)
+                  00006e64    00000018     msp_peripheral_config.o (.text.DL_AES_enablePower)
+                  00006e7c    00000018     msp_peripheral_config.o (.text.DL_AES_reset)
+                  00006e94    00000018     msp_peripheral_config.o (.text.DL_CRC_enablePower)
+                  00006eac    00000018     msp_peripheral_config.o (.text.DL_CRC_reset)
+                  00006ec4    00000018     DMAMSPM0.o (.text.DL_DMA_clearInterruptStatus)
+                  00006edc    00000018     msp_peripheral_config.o (.text.DL_GPIO_enableOutput)
+                  00006ef4    00000018     msp_peripheral_config.o (.text.DL_GPIO_enablePower)
+                  00006f0c    00000018     axon_routine.o (.text.DL_GPIO_initDigitalOutput)
+                  00006f24    00000018     msp_peripheral_config.o (.text.DL_GPIO_reset)
+                  00006f3c    00000018     axon_routine.o (.text.DL_GPIO_setPins)
+                  00006f54    00000018     s2a_packet.o (.text.DL_GPIO_setPins)
+                  00006f6c    00000018     msp_peripheral_config.o (.text.DL_GPIO_setUpperPinsPolarity)
+                  00006f84    00000018     ti_msp_dl_config.o (.text.DL_SYSCTL_setBORThreshold)
+                  00006f9c    00000018     ti_msp_dl_config.o (.text.DL_TRNG_clearInterruptStatus)
+                  00006fb4    00000018     msp_peripheral_config.o (.text.DL_TRNG_enablePower)
+                  00006fcc    00000018     ti_msp_dl_config.o (.text.DL_TRNG_isCommandDone)
+                  00006fe4    00000018     msp_peripheral_config.o (.text.DL_TRNG_reset)
+                  00006ffc    00000018     ti_msp_dl_config.o (.text.DL_TRNG_setClockDivider)
+                  00007014    00000018     msp_peripheral_config.o (.text.DL_Timer_enablePower)
+                  0000702c    00000018     msp_peripheral_config.o (.text.DL_Timer_reset)
+                  00007044    00000018     driverlib.a : dl_timer.o (.text.DL_Timer_setCaptureCompareOutCtl)
+                  0000705c    00000018     UARTMSPM0.o (.text.DL_UART_clearInterruptStatus)
+                  00007074    00000018     UARTMSPM0.o (.text.DL_UART_enableDMAReceiveEvent)
+                  0000708c    00000018     UARTMSPM0.o (.text.DL_UART_enableFIFOs)
+                  000070a4    00000018     msp_peripheral_config.o (.text.DL_UART_enableFIFOs)
+                  000070bc    00000018     UARTMSPM0.o (.text.DL_UART_enablePower)
+                  000070d4    00000018     msp_peripheral_config.o (.text.DL_UART_enablePower)
+                  000070ec    00000018     UARTMSPM0.o (.text.DL_UART_isRXFIFOEmpty)
+                  00007104    00000018     isr.o (.text.DL_UART_isRXFIFOEmpty)
+                  0000711c    00000018     UARTMSPM0.o (.text.DL_UART_reset)
+                  00007134    00000018     msp_peripheral_config.o (.text.DL_UART_reset)
+                  0000714c    00000018     axon_routine.o (.text.turn_off_led_b_gpio)
+                  00007164    00000018     axon_routine.o (.text.turn_off_led_g_gpio)
+                  0000717c    00000018     axon_routine.o (.text.turn_off_led_r_gpio)
+                  00007194    00000016     DMAMSPM0.o (.text.DL_DMA_disableRoundRobinPriority)
+                  000071aa    00000016     DMAMSPM0.o (.text.DL_DMA_enableRoundRobinPriority)
+                  000071c0    00000016     isr.o (.text.DL_GPIO_readPins)
+                  000071d6    00000016     UARTMSPM0.o (.text.DL_UART_disable)
+                  000071ec    00000016     UARTMSPM0.o (.text.DL_UART_enable)
+                  00007202    00000016     msp_peripheral_config.o (.text.DL_UART_enable)
+                  00007218    00000016     ti_msp_dl_config.o (.text.SYSCFG_DL_SYSCTL_init)
+                  0000722e    00000016     libc.a : copy_zero_init.c.obj (.text:decompress:ZI:__TI_zero_init_nomemset)
+                  00007244    00000014     DMAMSPM0.o (.text.DL_DMA_isRoundRobinPriorityEnabled)
+                  00007258    00000014     msp_peripheral_config.o (.text.DL_GPIO_clearPins)
+                  0000726c    00000014     s2a_packet.o (.text.DL_GPIO_clearPins)
+                  00007280    00000014     msp_peripheral_config.o (.text.DL_Timer_enableClock)
+                  00007294    00000014     msp_peripheral_config.o (.text.DL_Timer_setCCPDirection)
+                  000072a8    00000014     UARTMSPM0.o (.text.DL_UART_receiveData)
+                  000072bc    00000014     isr.o (.text.DL_UART_receiveData)
+                  000072d0    00000014     ti_msp_dl_config.o (.text.SYSCFG_DL_AES_init)
+                  000072e4    00000014     msp_peripheral_config.o (.text.SYSCFG_DL_SYSTICK_init)
+                  000072f8    00000014     libclang_rt.builtins.a : aeabi_uldivmod.S.obj (.text.__aeabi_uldivmod)
+                  0000730c    00000014     s2a_packet.o (.text.axon_status_clear_event_latches)
+                  00007320    00000014     s2a_packet.o (.text.clear_irq_signal)
+                  00007334    00000014     libc.a : _printfi.c.obj (.text.strchr)
+                  00007348    00000012     DMAMSPM0.o (.text.DL_DMA_getPendingInterrupt)
+                  0000735a    00000012     isr.o (.text.DL_GPIO_getPendingInterrupt)
+                  0000736c    00000012     isr.o (.text.DL_UART_getPendingInterrupt)
+                  0000737e    00000012     driverlib.a : dl_uart.o (.text.DL_UART_setClockConfig)
+                  00007390    00000012     UART.o (.text.UART_callbackObject)
+                  000073a2    00000012     UARTMSPM0.o (.text.UART_callbackObject)
+                  000073b4    00000012     UART.o (.text.UART_eventCallbackObject)
+                  000073c6    00000012     UARTMSPM0.o (.text.UART_eventCallbackObject)
+                  000073d8    00000012     libc.a : memcpy16.S.obj (.text:TI_memcpy_small)
+                  000073ea    00000012            : copy_decompress_none.c.obj (.text:decompress:none)
+                  000073fc    00000010     main.o (.text.DL_SYSCTL_disableSleepOnExit)
+                  0000740c    00000010     msp_peripheral_config.o (.text.DL_SYSTICK_enable)
+                  0000741c    00000010     msp_peripheral_config.o (.text.DL_SYSTICK_enableInterrupt)
+                  0000742c    00000010     driverlib.a : dl_timer.o (.text.DL_Timer_setCaptureCompareValue)
+                  0000743c    00000010     RingBuf.o (.text.RingBuf_space)
+                  0000744c    00000010     UARTMSPM0.o (.text.RingBuf_space)
+                  0000745c    00000010     isr.o (.text.SysTick_Handler)
+                  0000746c    00000010     s2a_packet.o (.text.generate_dic_from_serial)
+                  0000747c    00000010     axon_routine.o (.text.restore_led_rgb_pwm)
+                  0000748c    00000010     axon_routine.o (.text.turn_off_led_rgb_gpio)
+                  0000749c    00000010     libc.a : wcslen.c.obj (.text.wcslen)
+                  000074ac    0000000e            : memory.c.obj (.text.OUTLINED_FUNCTION_0)
+                  000074ba    0000000e     driver_config.o (.text.UARTMSP_eventCallback)
+                  000074c8    0000000e     libclang_rt.builtins.a : aeabi_memset.S.obj (.text.__aeabi_memset)
+                  000074d6    0000000e     libsysbm.a : hostrename.c.obj (.text.strcpy)
+                  000074e4    0000000e     libc.a : _printfi.c.obj (.text.strlen)
+                  000074f2    0000000e     libsysbm.a : hostrename.c.obj (.text.strlen)
+                  00007500    0000000e     libc.a : memset16.S.obj (.text:TI_memset_small)
+                  0000750e    0000000c     RingBuf.o (.text.RingBuf_getCount)
+                  0000751a    0000000c     UARTMSPM0.o (.text.UART_HWAttrs_Ptr)
+                  00007526    0000000c     UART.o (.text.UART_Obj_Ptr)
+                  00007532    0000000c     UARTMSPM0.o (.text.UART_Obj_Ptr)
+                  0000753e    0000000c     uart_packet.o (.text.UART_Obj_Ptr)
+                  0000754a    0000000c     UART.o (.text.UART_buffersObject)
+                  00007556    0000000c     UARTMSPM0.o (.text.UART_buffersObject)
+                  00007562    0000000c     uart_packet.o (.text.UART_buffersObject)
+                  0000756e    00000002     --HOLE-- [fill = 0]
+                  00007570    0000000c     libclang_rt.builtins.a : aeabi_memset.S.obj (.text.__aeabi_memclr)
+                  0000757c    0000000c     isr.o (.text.get_systick_count_ms)
+                  00007588    0000000c     libc.a : memory.c.obj (.text.malloc)
+                  00007594    0000000c     axon_routine.o (.text.restore_led_b_pwm)
+                  000075a0    0000000c     axon_routine.o (.text.restore_led_g_pwm)
+                  000075ac    0000000c     axon_routine.o (.text.restore_led_r_pwm)
+                  000075b8    0000000a     driverlib.a : dl_common.o (.text.DL_Common_delayCycles)
+                  000075c2    0000000a     libc.a : _printfi.c.obj (.text.OUTLINED_FUNCTION_0)
+                  000075cc    00000010     libclang_rt.builtins.a : adddf3.S.obj (.tramp.__aeabi_dsub.1)
+                  000075dc    0000000a     libc.a : _printfi.c.obj (.text.OUTLINED_FUNCTION_1)
+                  000075e6    0000000a     axon_routine.o (.text._set_amount)
+                  000075f0    0000000a     axon_routine.o (.text._set_led_pins)
+                  000075fa    00000002     --HOLE-- [fill = 0]
+                  000075fc    00000008     libclang_rt.builtins.a : aeabi_memcpy.S.obj (.text.__aeabi_memcpy)
+                  00007604    00000008     libc.a : printf.c.obj (.text._outc)
+                  0000760c    00000008            : printf.c.obj (.text._outs)
+                  00007614    00000008            : fseek.c.obj (.text.fseek)
+                  0000761c    00000008     libsysbm.a : remove.c.obj (.text.remove)
+                  00007624    00000006     libc.a : exit.c.obj (.text:abort)
+                  0000762a    00000004     startup_mspm0g350x_ticlang.o (.text.Default_Handler)
+                  0000762e    00000004     libsysbm.a : hostexit.c.obj (.text.HOSTexit)
+                  00007632    00000004     startup_mspm0g350x_ticlang.o (.text.Reset_Handler)
+                  00007636    00000002     --HOLE-- [fill = 0]
+                  00007638    00000010     libc.a : boot_cortex_m.c.obj (.tramp._c_int00_noargs.1)
+                  00007648    00000004     uart_packet.o (.text._init_uart_t2s)
+                  0000764c    00000004     libc.a : pre_init.c.obj (.text._system_pre_init)
 
-.cinit     0    000069b0    000000b0     
-                  000069b0    0000008c     (.cinit..data.load) [load image, compression = lzss]
-                  00006a3c    0000000c     (__TI_handler_table)
-                  00006a48    00000008     (.cinit..bss.load) [load image, compression = zero_init]
-                  00006a50    00000010     (__TI_cinit_table)
+.cinit     0    00007ac0    000000b0     
+                  00007ac0    00000087     (.cinit..data.load) [load image, compression = lzss]
+                  00007b47    00000001     --HOLE-- [fill = 0]
+                  00007b48    0000000c     (__TI_handler_table)
+                  00007b54    00000008     (.cinit..bss.load) [load image, compression = zero_init]
+                  00007b5c    00000010     (__TI_cinit_table)
+                  00007b6c    00000004     --HOLE-- [fill = 0]
 
-.rodata    0    00005a80    00000f30     
-                  00005a80    00000101     libc.a : aeabi_ctype.S.obj (.rodata:__aeabi_ctype_table_)
-                  00005b81    00000041     soma_uart_test.o (.rodata.str1.16654180804995962023.1)
-                  00005bc2    0000003b     soma_uart_test.o (.rodata.str1.2061415982541592493.1)
-                  00005bfd    0000003a     soma_uart_test.o (.rodata.str1.3517047578161819147.1)
-                  00005c37    00000038     soma_uart_test.o (.rodata.str1.15322175039824514785.1)
-                  00005c6f    00000036     soma_uart_test.o (.rodata.str1.8105766591010707283.1)
-                  00005ca5    00000035     soma_uart_test.o (.rodata.str1.17536086522442526617.1)
-                  00005cda    00000034     soma_uart_test.o (.rodata.str1.17041435235386790962.1)
-                  00005d0e    00000034     soma_uart_test.o (.rodata.str1.6991378509994527523.1)
-                  00005d42    00000033     soma_uart_test.o (.rodata.str1.15020954239668834006.1)
-                  00005d75    00000033     soma_uart_test.o (.rodata.str1.1890052047633643607.1)
-                  00005da8    00000033     soma_uart_test.o (.rodata.str1.7654486541867905727.1)
-                  00005ddb    00000033     soma_uart_test.o (.rodata.str1.7938506061661190950.1)
-                  00005e0e    00000032     soma_uart_test.o (.rodata.str1.10163249013505825569.1)
-                  00005e40    00000032     soma_uart_test.o (.rodata.str1.14079618591722103394.1)
-                  00005e72    00000031     soma_uart_test.o (.rodata.str1.17473460543981892912.1)
-                  00005ea3    00000001     driver_config.o (.rodata.CONFIG_UART_0)
-                  00005ea4    00000030     axon_routine.o (.rodata.RGB_COLOR)
-                  00005ed4    0000002f     soma_uart_test.o (.rodata.str1.13441043914117349290.1)
-                  00005f03    0000002f     soma_uart_test.o (.rodata.str1.16322149634282422874.1)
-                  00005f32    0000002d     soma_uart_test.o (.rodata.str1.17136734739776161434.1)
-                  00005f5f    0000002d     soma_uart_test.o (.rodata.str1.17351673150342425559.1)
-                  00005f8c    0000002b     soma_uart_test.o (.rodata.str1.10070456639579151733.1)
-                  00005fb7    0000002b     soma_uart_test.o (.rodata.str1.16244165158505229871.1)
-                  00005fe2    0000002b     soma_uart_test.o (.rodata.str1.7661070790550371528.1)
-                  0000600d    0000002a     soma_uart_test.o (.rodata.str1.10184342847961052313.1)
-                  00006037    0000002a     soma_uart_test.o (.rodata.str1.16957814922671156076.1)
-                  00006061    0000002a     soma_uart_test.o (.rodata.str1.4079786675028340556.1)
-                  0000608b    00000029     soma_uart_test.o (.rodata.str1.11644266049504762377.1)
-                  000060b4    00000029     soma_uart_test.o (.rodata.str1.942783365432142944.1)
-                  000060dd    00000027     soma_uart_test.o (.rodata.str1.7975737670469319385.1)
-                  00006104    00000026     axon_routine.o (.rodata.str1.10607366127034335297.1)
-                  0000612a    00000026     soma_uart_test.o (.rodata.str1.9479211168667275099.1)
-                  00006150    00000024     driver_config.o (.rodata.UARTMSPHWAttrs)
-                  00006174    00000024     UARTMSPM0.o (.rodata.UART_defaultParams)
-                  00006198    00000024     soma_uart_test.o (.rodata.str1.13123305539408956877.1)
-                  000061bc    00000023     soma_uart_test.o (.rodata.str1.15899394655737524233.1)
-                  000061df    00000023     soma_uart_test.o (.rodata.str1.4873900052967670548.1)
-                  00006202    00000022     soma_uart_test.o (.rodata.str1.13394713005753595998.1)
-                  00006224    00000022     soma_uart_test.o (.rodata.str1.16386353871485614729.1)
-                  00006246    00000022     soma_uart_test.o (.rodata.str1.9967209926890809386.1)
-                  00006268    00000021     axon_routine.o (.rodata.str1.18362543123880482347.1)
-                  00006289    00000021     axon_routine.o (.rodata.str1.5315017142325176683.1)
-                  000062aa    00000021     soma_uart_test.o (.rodata.str1.6808969578671402438.1)
-                  000062cb    00000020     soma_uart_test.o (.rodata.str1.13188140656326980617.1)
-                  000062eb    00000020     soma_uart_test.o (.rodata.str1.15134258156556755102.1)
-                  0000630b    00000020     soma_uart_test.o (.rodata.str1.2340633347433881276.1)
-                  0000632b    00000020     soma_uart_test.o (.rodata.str1.6306140378130011139.1)
-                  0000634b    0000001f     soma_uart_test.o (.rodata.str1.14283333920883619451.1)
-                  0000636a    0000001f     soma_uart_test.o (.rodata.str1.15199946004445289917.1)
-                  00006389    0000001f     soma_uart_test.o (.rodata.str1.5443586908527061285.1)
-                  000063a8    0000001f     soma_uart_test.o (.rodata.str1.7117899677981178711.1)
-                  000063c7    0000001e     soma_uart_test.o (.rodata.str1.11420272315026211210.1)
-                  000063e5    0000001e     soma_uart_test.o (.rodata.str1.12732622705187421320.1)
-                  00006403    0000001e     soma_uart_test.o (.rodata.str1.13367386425846727689.1)
-                  00006421    0000001e     soma_uart_test.o (.rodata.str1.16677525181159974959.1)
-                  0000643f    0000001e     soma_uart_test.o (.rodata.str1.3860697354571657148.1)
-                  0000645d    0000001e     soma_uart_test.o (.rodata.str1.8876222698332790706.1)
-                  0000647b    0000001d     soma_uart_test.o (.rodata.str1.11023375636173954776.1)
-                  00006498    0000001d     soma_uart_test.o (.rodata.str1.11329209524822288394.1)
-                  000064b5    0000001c     soma_uart_test.o (.rodata.str1.16481367246467521323.1)
-                  000064d1    0000001c     soma_uart_test.o (.rodata.str1.16719669602870276521.1)
-                  000064ed    0000001c     axon_routine.o (.rodata.str1.17620752597607741984.1)
-                  00006509    0000001c     soma_uart_test.o (.rodata.str1.184583061006620495.1)
-                  00006525    0000001c     axon_routine.o (.rodata.str1.3546071986206203703.1)
-                  00006541    0000001b     soma_uart_test.o (.rodata.str1.13408796569094655852.1)
-                  0000655c    0000001b     soma_uart_test.o (.rodata.str1.17613937135746266554.1)
-                  00006577    0000001b     soma_uart_test.o (.rodata.str1.1965716677265520748.1)
-                  00006592    0000001b     soma_uart_test.o (.rodata.str1.3077626263441345455.1)
-                  000065ad    0000001b     soma_uart_test.o (.rodata.str1.5685556556372034132.1)
-                  000065c8    0000001b     soma_uart_test.o (.rodata.str1.6939858017520916414.1)
-                  000065e3    0000001a     soma_uart_test.o (.rodata.str1.12626795811684800195.1)
-                  000065fd    0000001a     soma_uart_test.o (.rodata.str1.13601176438134262470.1)
-                  00006617    0000001a     soma_uart_test.o (.rodata.str1.13870196032648185146.1)
-                  00006631    0000001a     soma_uart_test.o (.rodata.str1.3198460192409668879.1)
-                  0000664b    0000001a     soma_uart_test.o (.rodata.str1.5369279480431612071.1)
-                  00006665    0000001a     soma_uart_test.o (.rodata.str1.8942118649452098088.1)
-                  0000667f    00000019     soma_uart_test.o (.rodata.str1.11086199888729881950.1)
-                  00006698    00000019     soma_uart_test.o (.rodata.str1.12375064986364297426.1)
-                  000066b1    00000019     soma_uart_test.o (.rodata.str1.15125850329338579223.1)
-                  000066ca    00000019     soma_uart_test.o (.rodata.str1.16254539774948768190.1)
-                  000066e3    00000019     soma_uart_test.o (.rodata.str1.17698080562580122565.1)
-                  000066fc    00000019     soma_uart_test.o (.rodata.str1.18141130609299692306.1)
-                  00006715    00000019     soma_uart_test.o (.rodata.str1.3034774577021921583.1)
-                  0000672e    00000019     soma_uart_test.o (.rodata.str1.3916682241953975198.1)
-                  00006747    00000019     soma_uart_test.o (.rodata.str1.4197766877496437692.1)
-                  00006760    00000019     soma_uart_test.o (.rodata.str1.7858088714300792515.1)
-                  00006779    00000019     soma_uart_test.o (.rodata.str1.8931270193813525003.1)
-                  00006792    00000018     soma_uart_test.o (.rodata.str1.11836195491061035432.1)
-                  000067aa    00000018     soma_uart_test.o (.rodata.str1.12054306914578356248.1)
-                  000067c2    00000017     soma_uart_test.o (.rodata.str1.10108747765790373255.1)
-                  000067d9    00000017     soma_uart_test.o (.rodata.str1.10318817397567276748.1)
-                  000067f0    00000017     soma_uart_test.o (.rodata.str1.16722597503732870044.1)
-                  00006807    00000016     soma_uart_test.o (.rodata.str1.7213686808809945738.1)
-                  0000681d    00000015     soma_uart_test.o (.rodata.str1.16027454728899058958.1)
-                  00006832    00000015     soma_uart_test.o (.rodata.str1.1847060648332526889.1)
-                  00006847    00000015     soma_uart_test.o (.rodata.str1.2858325980294209253.1)
-                  0000685c    00000015     soma_uart_test.o (.rodata.str1.7364527145945857610.1)
-                  00006871    00000003     msp_peripheral_config.o (.rodata.g_TIMA_LED_CLOCK_CONFIG)
-                  00006874    00000014     UARTMSPM0.o (.rodata.UARTMSPSupportFxns)
-                  00006888    00000014     soma_uart_test.o (.rodata.str1.12996389359915023531.1)
-                  0000689c    00000013     soma_uart_test.o (.rodata.str1.14090735835401894106.1)
-                  000068af    00000013     soma_uart_test.o (.rodata.str1.3656060049038560126.1)
-                  000068c2    00000013     soma_uart_test.o (.rodata.str1.4289409106243483452.1)
-                  000068d5    00000013     soma_uart_test.o (.rodata.str1.6180038144827555039.1)
-                  000068e8    00000012     soma_uart_test.o (.rodata.str1.12923032315216590397.1)
-                  000068fa    00000012     soma_uart_test.o (.rodata.str1.16458891893788912065.1)
-                  0000690c    00000011     libc.a : _printfi.c.obj (.rodata.str1.10348868589481759720.1)
-                  0000691d    00000011            : _printfi.c.obj (.rodata.str1.15363888844622738466.1)
-                  0000692e    00000011     soma_uart_test.o (.rodata.str1.6665633725919294800.1)
-                  0000693f    00000010     soma_uart_test.o (.rodata.str1.14255258637949428607.1)
-                  0000694f    0000000f     soma_uart_test.o (.rodata.str1.13358519372413061364.1)
-                  0000695e    0000000f     soma_uart_test.o (.rodata.str1.16725090839161609763.1)
-                  0000696d    00000003     msp_peripheral_config.o (.rodata.g_TIMG_LED_CLOCK_CONFIG)
-                  00006970    00000008     driver_config.o (.rodata.DMAMSP0HWAttrs)
-                  00006978    00000008     driver_config.o (.rodata.DMAMSPM0_Config)
-                  00006980    00000008     driver_config.o (.rodata.UART_config)
-                  00006988    00000008     msp_peripheral_config.o (.rodata.g_TIMA_LED_PWM_CONFIG)
-                  00006990    00000008     msp_peripheral_config.o (.rodata.g_TIMG_LED_PWM_CONFIG)
-                  00006998    00000006     soma_uart_test.o (.rodata.str1.12735885767990043604.1)
-                  0000699e    00000002     soma_uart_test.o (.rodata.str1.12573441512562572713.1)
-                  000069a0    00000001     driver_config.o (.rodata.UART_count)
-                  000069a1    0000000f     --HOLE-- [fill = 0]
+.rodata    0    00007650    00000470     
+                  00007650    00000101     libc.a : aeabi_ctype.S.obj (.rodata:__aeabi_ctype_table_)
+                  00007751    00000054     s2a_packet.o (.rodata.str1.11651614510642161048.1)
+                  000077a5    0000004f     s2a_packet.o (.rodata.str1.15197212992152432442.1)
+                  000077f4    0000003b     s2a_packet.o (.rodata.str1.10890815327036374194.1)
+                  0000782f    00000038     soma_axon_comm_test.o (.rodata.str1.16888641032759933111.1)
+                  00007867    00000038     s2a_packet.o (.rodata.str1.9534252372474839467.1)
+                  0000789f    00000031     s2a_packet.o (.rodata.str1.16030559404050719370.1)
+                  000078d0    00000030     axon_routine.o (.rodata.RGB_COLOR)
+                  00007900    0000002c     s2a_packet.o (.rodata.str1.14054255457577735801.1)
+                  0000792c    0000002b     soma_axon_comm_test.o (.rodata.str1.9961456443828157440.1)
+                  00007957    00000001     driver_config.o (.rodata.CONFIG_UART_0)
+                  00007958    00000024     driver_config.o (.rodata.UARTMSPHWAttrs)
+                  0000797c    00000024     UARTMSPM0.o (.rodata.UART_defaultParams)
+                  000079a0    0000001e     s2a_packet.o (.rodata..L__const.axon_handle_setaxon.timeout_table)
+                  000079be    0000001e     soma_axon_comm_test.o (.rodata.str1.17163733150804281806.1)
+                  000079dc    00000014     UARTMSPM0.o (.rodata.UARTMSPSupportFxns)
+                  000079f0    00000011     libc.a : _printfi.c.obj (.rodata.str1.10348868589481759720.1)
+                  00007a01    00000011            : _printfi.c.obj (.rodata.str1.15363888844622738466.1)
+                  00007a12    00000010     s2a_packet.o (.rodata.axon_handle_setaxon.timeout_map)
+                  00007a22    00000001     driver_config.o (.rodata.UART_count)
+                  00007a23    00000001     --HOLE-- [fill = 0]
+                  00007a24    00000008     driver_config.o (.rodata.DMAMSP0HWAttrs)
+                  00007a2c    00000008     driver_config.o (.rodata.DMAMSPM0_Config)
+                  00007a34    00000008     driver_config.o (.rodata.UART_config)
+                  00007a3c    00000008     msp_peripheral_config.o (.rodata.g_TIMA_LED_PWM_CONFIG)
+                  00007a44    00000008     msp_peripheral_config.o (.rodata.g_TIMG_LED_PWM_CONFIG)
+                  00007a4c    00000008     soma_axon_comm_test.o (.rodata.str1.16019993927173311506.1)
+                  00007a54    00000008     soma_axon_comm_test.o (.rodata.str1.4563888346566811793.1)
+                  00007a5c    00000008     soma_axon_comm_test.o (.rodata.str1.6155995108037416659.1)
+                  00007a64    00000008     soma_axon_comm_test.o (.rodata.str1.736556590954446019.1)
+                  00007a6c    00000008     soma_axon_comm_test.o (.rodata.str1.8298861297467414673.1)
+                  00007a74    00000007     soma_axon_comm_test.o (.rodata.str1.15543427717675474179.1)
+                  00007a7b    00000007     soma_axon_comm_test.o (.rodata.str1.16196245222610423718.1)
+                  00007a82    00000007     soma_axon_comm_test.o (.rodata.str1.4979646705443735783.1)
+                  00007a89    00000007     soma_axon_comm_test.o (.rodata.str1.7589549447101528093.1)
+                  00007a90    00000006     s2a_packet.o (.rodata.axon_serial_number)
+                  00007a96    00000006     soma_axon_comm_test.o (.rodata.str1.14803114291648115125.1)
+                  00007a9c    00000006     soma_axon_comm_test.o (.rodata.str1.7247368328196744947.1)
+                  00007aa2    00000005     soma_axon_comm_test.o (.rodata.str1.1937060561350349321.1)
+                  00007aa7    00000004     soma_axon_comm_test.o (.rodata.str1.14413332638274022860.1)
+                  00007aab    00000004     soma_axon_comm_test.o (.rodata.str1.14700453761544015464.1)
+                  00007aaf    00000003     msp_peripheral_config.o (.rodata.g_TIMA_LED_CLOCK_CONFIG)
+                  00007ab2    00000003     msp_peripheral_config.o (.rodata.g_TIMG_LED_CLOCK_CONFIG)
+                  00007ab5    0000000b     --HOLE-- [fill = 0]
 
 .init_array 
 *          0    00000000    00000000     UNINITIALIZED
 
 .binit     0    00000000    00000000     
 
-.sysmem    0    20200000    00000800     UNINITIALIZED
-                  20200000    00000010     libc.a : memory.c.obj (.sysmem)
-                  20200010    000007f0     --HOLE--
-
-.data      0    20200800    0000036d     UNINITIALIZED
+.data      0    20200000    00000c39     UNINITIALIZED
+                  20200000    00000800     s2a_packet.o (.data.axon_handle_codepkt.g_fw_buffer)
                   20200800    000000f0     libc.a : defs.c.obj (.data._ftable)
                   202008f0    00000090     driver_config.o (.data.UARTObject)
                   20200980    00000078     libsysbm.a : host_device.c.obj (.data._device)
                   202009f8    00000060     driver_config.o (.data.g_uart_buffers)
                   20200a58    00000050     libsysbm.a : host_device.c.obj (.data._stream)
                   20200aa8    00000048     uart_packet.o (.data._s2a_uart_context)
-                  20200af0    00000030     driver_config.o (.data.DMAObject)
-                  20200b20    00000008     libc.a : exit.c.obj (.data..L_MergedGlobals)
-                  20200b28    00000004            : defs.c.obj (.data.__TI_ft_end)
-                  20200b2c    00000004            : aeabi_portable.c.obj (.data.__aeabi_errno)
-                  20200b30    00000004            : _lock.c.obj (.data._lock)
-                  20200b34    00000004     uart_packet.o (.data._uart_s2a_handle)
-                  20200b38    00000004     uart_packet.o (.data._uart_t2s_handle)
-                  20200b3c    00000004     libc.a : _lock.c.obj (.data._unlock)
-                  20200b40    00000004     DMAMSPM0.o (.data.chTransferSet)
-                  20200b44    00000004     DMAMSPM0.o (.data.channelsInUse)
-                  20200b48    00000004     soma_uart_test.o (.data.debug_byte1_ng_count)
-                  20200b4c    00000004     soma_uart_test.o (.data.debug_complete_count)
-                  20200b50    00000004     soma_uart_test.o (.data.debug_frame_count)
-                  20200b54    00000004     soma_uart_test.o (.data.debug_rx_count)
-                  20200b58    00000004     soma_uart_test.o (.data.debug_sync_reset_count)
-                  20200b5c    00000004     DMAMSPM0.o (.data.dmaIntRefCount)
-                  20200b60    00000004     isr.o (.data.g_systick_count)
-                  20200b64    00000001     soma_uart_test.o (.data.debug_byte1)
-                  20200b65    00000001     soma_uart_test.o (.data.debug_last_byte)
-                  20200b66    00000001     soma_uart_test.o (.data.debug_rx_index)
-                  20200b67    00000001     DMAMSPM0.o (.data.dmaInitialized)
-                  20200b68    00000001     soma_uart_test.o (.data.frame_received)
-                  20200b69    00000001     isr.o (.data.rx_complete_ready)
-                  20200b6a    00000001     soma_uart_test.o (.data.rx_index)
-                  20200b6b    00000001     --HOLE--
-                  20200b6c    00000001     libc.a : memory.c.obj (.data.memory_is_initialized)
+                  20200af0    0000003c     soma_axon_comm_test.o (.data.g_test_stats)
+                  20200b2c    00000030     driver_config.o (.data.DMAObject)
+                  20200b5c    00000020     s2a_packet.o (.data.debug_atirq_encrypted)
+                  20200b7c    00000020     s2a_packet.o (.data.debug_atirq_plain)
+                  20200b9c    00000010     s2a_packet.o (.data.axon_handle_setokey.g_operation_key)
+                  20200bac    00000010     axon_routine.o (.data.g_axon_status_shared)
+                  20200bbc    00000008     libc.a : exit.c.obj (.data..L_MergedGlobals)
+                  20200bc4    00000005     soma_axon_comm_test.o (.data.g_test_config)
+                  20200bc9    00000001     s2a_packet.o (.data.axon_handle_afwup.g_fw_update_mode)
+                  20200bca    00000002     s2a_packet.o (.data.debug_crc_calc)
+                  20200bcc    00000004     libc.a : defs.c.obj (.data.__TI_ft_end)
+                  20200bd0    00000004            : aeabi_portable.c.obj (.data.__aeabi_errno)
+                  20200bd4    00000004            : _lock.c.obj (.data._lock)
+                  20200bd8    00000004     uart_packet.o (.data._uart_s2a_handle)
+                  20200bdc    00000004     uart_packet.o (.data._uart_t2s_handle)
+                  20200be0    00000004     libc.a : _lock.c.obj (.data._unlock)
+                  20200be4    00000004     DMAMSPM0.o (.data.chTransferSet)
+                  20200be8    00000004     DMAMSPM0.o (.data.channelsInUse)
+                  20200bec    00000004     soma_uart_test.o (.data.debug_byte1_ng_count)
+                  20200bf0    00000004     s2a_packet.o (.data.debug_chkirq_call_count)
+                  20200bf4    00000004     s2a_packet.o (.data.debug_cmd_ng_count)
+                  20200bf8    00000004     soma_uart_test.o (.data.debug_complete_count)
+                  20200bfc    00000004     s2a_packet.o (.data.debug_crc_ng_count)
+                  20200c00    00000004     s2a_packet.o (.data.debug_header_ng_count)
+                  20200c04    00000004     s2a_packet.o (.data.debug_led_event_count)
+                  20200c08    00000004     s2a_packet.o (.data.debug_len_ng_count)
+                  20200c0c    00000004     soma_uart_test.o (.data.debug_rx_count)
+                  20200c10    00000004     s2a_packet.o (.data.debug_send_ok_count)
+                  20200c14    00000004     soma_uart_test.o (.data.debug_sync_reset_count)
+                  20200c18    00000004     DMAMSPM0.o (.data.dmaIntRefCount)
+                  20200c1c    00000004     s2a_packet.o (.data.g_fw_last_address)
+                  20200c20    00000004     s2a_packet.o (.data.g_fw_total_crc)
+                  20200c24    00000004     isr.o (.data.g_systick_count)
+                  20200c28    00000002     s2a_packet.o (.data.debug_crc_recv)
+                  20200c2a    00000001     s2a_packet.o (.data.axon_handle_errchk.g_fw_update_complete)
+                  20200c2b    00000001     soma_uart_test.o (.data.debug_byte1)
+                  20200c2c    00000001     s2a_packet.o (.data.debug_decrypted_id)
+                  20200c2d    00000001     soma_uart_test.o (.data.debug_last_byte)
+                  20200c2e    00000001     soma_uart_test.o (.data.debug_rx_index)
+                  20200c2f    00000001     DMAMSPM0.o (.data.dmaInitialized)
+                  20200c30    00000001     soma_uart_test.o (.data.frame_received)
+                  20200c31    00000001     s2a_packet.o (.data.g_cmd_recv_toggle)
+                  20200c32    00000001     axon_routine.o (.data.g_left_amount)
+                  20200c33    00000001     axon_routine.o (.data.g_right_amount)
+                  20200c34    00000001     libc.a : memory.c.obj (.data.memory_is_initialized)
+                  20200c35    00000001     isr.o (.data.rx_complete_ready)
+                  20200c36    00000001     soma_uart_test.o (.data.rx_index)
+                  20200c37    00000001     soma_uart_test.o (.data.rx_variable_length)
+                  20200c38    00000001     soma_uart_test.o (.data.rx_variable_ready)
 
-.bss       0    20200b70    00000320     UNINITIALIZED
-                  20200b70    00000120     libsysbm.a : trgmsg.c.obj (.bss:_CIOBUF_)
-                  20200c90    000000a0     libc.a : defs.c.obj (.bss.__TI_tmpnams)
-                  20200d30    00000024     (.common:rx_complete_frame)
-                  20200d54    00000024     (.common:rx_frame)
-                  20200d78    0000001c     DMAMSPM0.o (.bss.hwiFxnArgs)
-                  20200d94    0000001c     DMAMSPM0.o (.bss.hwiFxnHandlers)
-                  20200db0    00000018     UARTMSPM0.o (.bss.dlDMACfg)
-                  20200dc8    00000018     axon_routine.o (.bss.g_rgb_fade_state)
-                  20200de0    00000014     (.common:g_button_1_event)
-                  20200df4    00000014     (.common:g_button_2_event)
-                  20200e08    00000014     (.common:g_coindet_event)
-                  20200e1c    00000014     (.common:g_connector_event)
-                  20200e30    00000014     (.common:g_door_event)
-                  20200e44    00000014     (.common:g_escrow_event)
-                  20200e58    00000014     (.common:g_rotary_event)
-                  20200e6c    00000014     (.common:g_soldout_event)
-                  20200e80    00000008     libsysbm.a : hostopen.c.obj (.bss.parmbuf)
-                  20200e88    00000004     UART.o (.bss.UART_writeCallback.dstAddr)
-                  20200e8c    00000004     libc.a : memory.c.obj (.bss.sys_free)
+.sysmem    0    20200c40    00000800     UNINITIALIZED
+                  20200c40    00000010     libc.a : memory.c.obj (.sysmem)
+                  20200c50    000007f0     --HOLE--
+
+.bss       0    20201440    00000348     UNINITIALIZED
+                  20201440    00000120     libsysbm.a : trgmsg.c.obj (.bss:_CIOBUF_)
+                  20201560    000000a0     libc.a : defs.c.obj (.bss.__TI_tmpnams)
+                  20201600    00000028     (.common:rx_variable_frame)
+                  20201628    00000024     (.common:rx_complete_frame)
+                  2020164c    00000024     (.common:rx_frame)
+                  20201670    0000001c     DMAMSPM0.o (.bss.hwiFxnArgs)
+                  2020168c    0000001c     DMAMSPM0.o (.bss.hwiFxnHandlers)
+                  202016a8    00000018     UARTMSPM0.o (.bss.dlDMACfg)
+                  202016c0    00000018     axon_routine.o (.bss.g_rgb_fade_state)
+                  202016d8    00000014     (.common:g_button_1_event)
+                  202016ec    00000014     (.common:g_button_2_event)
+                  20201700    00000014     (.common:g_coindet_event)
+                  20201714    00000014     (.common:g_connector_event)
+                  20201728    00000014     (.common:g_door_event)
+                  2020173c    00000014     (.common:g_escrow_event)
+                  20201750    00000014     (.common:g_rotary_event)
+                  20201764    00000014     (.common:g_soldout_event)
+                  20201778    00000008     libsysbm.a : hostopen.c.obj (.bss.parmbuf)
+                  20201780    00000004     UART.o (.bss.UART_writeCallback.dstAddr)
+                  20201784    00000004     libc.a : memory.c.obj (.bss.sys_free)
 
 .stack     0    20207e00    00000200     UNINITIALIZED
                   20207e00    00000004     libc.a : boot_cortex_m.c.obj (.stack)
@@ -535,41 +538,47 @@ MODULE SUMMARY
        Module                         code    ro data   rw data
        ------                         ----    -------   -------
     .\
-       soma_uart_test.o               3674    3234      61     
-       axon_routine.o                 2320    208       184    
-       isr.o                          942     0         41     
+       axon_routine.o                 3122    48        202    
+       uart_packet.o                  1176    0         80     
+       isr.o                          1046    0         41     
+       soma_axon_comm_test.o          700     222       65     
        ti_msp_dl_config.o             524     0         0      
-       uart_packet.o                  440     0         80     
        driver_config.o                14      62        288    
        main.o                         230     0         0      
        startup_mspm0g350x_ticlang.o   8       192       0      
+       soma_uart_test.o               0       0         99     
     +--+------------------------------+-------+---------+---------+
-       Total:                         8152    3696      654    
+       Total:                         6820    524       775    
                                                                
     .\driver\
-       UART.o                         1690    0         4      
+       UART.o                         1894    0         4      
     +--+------------------------------+-------+---------+---------+
-       Total:                         1690    0         4      
+       Total:                         1894    0         4      
                                                                
     .\driver\dma\
-       DMAMSPM0.o                     962     0         69     
+       DMAMSPM0.o                     1132    0         69     
     +--+------------------------------+-------+---------+---------+
-       Total:                         962     0         69     
+       Total:                         1132    0         69     
                                                                
     .\driver\uart\
-       UARTMSPM0.o                    2026    56        24     
+       UARTMSPM0.o                    2182    56        24     
     +--+------------------------------+-------+---------+---------+
-       Total:                         2026    56        24     
+       Total:                         2182    56        24     
                                                                
     .\driver\utils\
-       RingBuf.o                      608     0         0      
+       RingBuf.o                      730     0         0      
     +--+------------------------------+-------+---------+---------+
-       Total:                         608     0         0      
+       Total:                         730     0         0      
                                                                
     .\peripheral\
        msp_peripheral_config.o        2588    22        0      
     +--+------------------------------+-------+---------+---------+
        Total:                         2588    22        0      
+                                                               
+    .\protocol\src\
+       s2a_packet.o                   3628    423       2172   
+    +--+------------------------------+-------+---------+---------+
+       Total:                         3628    423       2172   
                                                                
     C:/ti/mspm0_sdk_2_06_00_05/source/ti/driverlib/lib/ticlang/m0p/mspm0g1x0x_g3x0x/driverlib.a
        dl_timer.o                     356     0         0      
@@ -580,12 +589,13 @@ MODULE SUMMARY
        Total:                         660     0         0      
                                                                
     C:\ti\ccs2030\ccs\tools\compiler\ti-cgt-armllvm_4.0.3.LTS\lib\armv6m-ti-none-eabi/c/libc.a
-       _printfi.c.obj                 2166    34        0      
+       _printfi.c.obj                 4510    34        0      
        memory.c.obj                   702     0         5      
        defs.c.obj                     0       0         404    
        aeabi_ctype.S.obj              0       257       0      
        fputs.c.obj                    248     0         0      
        setvbuf.c.obj                  224     0         0      
+       s_scalbn.c.obj                 216     0         0      
        getdevice.c.obj                160     0         0      
        fputc.c.obj                    156     0         0      
        strcmp-armv6m.S.obj            136     0         0      
@@ -594,6 +604,8 @@ MODULE SUMMARY
        fseek.c.obj                    116     0         0      
        printf.c.obj                   108     0         0      
        _io_perm.c.obj                 100     0         0      
+       s_frexp.c.obj                  92      0         0      
+       _ltoa.c.obj                    88      0         0      
        fflush.c.obj                   82      0         0      
        exit.c.obj                     58      0         8      
        atoi.c.obj                     64      0         0      
@@ -610,7 +622,7 @@ MODULE SUMMARY
        _lock.c.obj                    2       0         8      
        pre_init.c.obj                 4       0         0      
     +--+------------------------------+-------+---------+---------+
-       Total:                         4872    291       429    
+       Total:                         7612    291       429    
                                                                
     C:\ti\ccs2030\ccs\tools\compiler\ti-cgt-armllvm_4.0.3.LTS\lib\armv6m-ti-none-eabi/c/libsysbm.a
        trgmsg.c.obj                   104     0         288    
@@ -632,9 +644,17 @@ MODULE SUMMARY
        Total:                         980     0         496    
                                                                
     C:\ti\ccs2030\ccs\tools\compiler\ti-cgt-armllvm_4.0.3.LTS\lib\armv6m-ti-none-eabi/libclang_rt.builtins.a
+       adddf3.S.obj                   418     0         0      
+       divdf3.S.obj                   268     0         0      
+       muldf3.S.obj                   228     0         0      
+       comparedf2.c.obj               220     0         0      
        udivmoddi4.S.obj               162     0         0      
+       aeabi_dcmp.S.obj               98      0         0      
+       aeabi_idivmod.S.obj            86      0         0      
+       fixdfsi.S.obj                  74      0         0      
        aeabi_uidivmod.S.obj           64      0         0      
        muldsi3.S.obj                  58      0         0      
+       floatsidf.S.obj                44      0         0      
        muldi3.S.obj                   36      0         0      
        ashldi3.S.obj                  30      0         0      
        aeabi_memset.S.obj             26      0         0      
@@ -642,25 +662,25 @@ MODULE SUMMARY
        aeabi_memcpy.S.obj             8       0         0      
        aeabi_div0.c.obj               4       0         0      
     +--+------------------------------+-------+---------+---------+
-       Total:                         408     0         0      
+       Total:                         1844    0         0      
                                                                
        Heap:                          0       0         2048   
        Stack:                         0       0         512    
-       Linker Generated:              0       176       0      
+       Linker Generated:              0       171       0      
     +--+------------------------------+-------+---------+---------+
-       Grand Total:                   22946   4241      4236   
+       Grand Total:                   30070   1487      6529   
 
 
 LINKER GENERATED COPY TABLES
 
-__TI_cinit_table @ 00006a50 records: 2, size/record: 8, table size: 16
-	.data: load addr=000069b0, load size=0000008c bytes, run addr=20200800, run size=0000036d bytes, compression=lzss
-	.bss: load addr=00006a48, load size=00000008 bytes, run addr=20200b70, run size=00000320 bytes, compression=zero_init
+__TI_cinit_table @ 00007b5c records: 2, size/record: 8, table size: 16
+	.data: load addr=00007ac0, load size=00000087 bytes, run addr=20200000, run size=00000c39 bytes, compression=lzss
+	.bss: load addr=00007b54, load size=00000008 bytes, run addr=20201440, run size=00000348 bytes, compression=zero_init
 
 
 LINKER GENERATED HANDLER TABLE
 
-__TI_handler_table @ 00006a3c records: 3, size/record: 4, table size: 12
+__TI_handler_table @ 00007b48 records: 3, size/record: 4, table size: 12
 	index: 0, handler: __TI_decompress_lzss
 	index: 1, handler: __TI_decompress_none
 	index: 2, handler: __TI_zero_init
@@ -671,110 +691,120 @@ FAR CALL TRAMPOLINES
 callee name               trampoline name
    callee addr  tramp addr   call addr  call info
 --------------  -----------  ---------  ----------------
+__aeabi_dsub              $Tramp$TT$L$PI$$__aeabi_dsub
+   000026e5     000075cc     000075ca   libc.a : _printfi.c.obj (.text.OUTLINED_FUNCTION_0)
 _c_int00_noargs           $Tramp$TT$L$PI$$_c_int00_noargs
-   00004f15     00005a5c     00005a56   startup_mspm0g350x_ticlang.o (.text.Reset_Handler)
+   00006a31     00007638     00007632   startup_mspm0g350x_ticlang.o (.text.Reset_Handler)
 
-[1 trampolines]
-[1 trampoline calls]
+[2 trampolines]
+[2 trampoline calls]
 
 
 GLOBAL SYMBOLS: SORTED ALPHABETICALLY BY Name 
 
 address   name                            
 -------   ----                            
-00005a4f  ADC0_IRQHandler                 
-00005a4f  ADC1_IRQHandler                 
-00005a4f  AES_IRQHandler                  
-00005a52  C$$EXIT                         
-00004911  C$$IO$$                         
-00005a4f  CANFD0_IRQHandler               
-00005ea3  CONFIG_UART_0                   
-00005a4f  DAC0_IRQHandler                 
-00005a0d  DL_Common_delayCycles           
-00004351  DL_DMA_initChannel              
-0000255d  DL_Timer_initFourCCPWMMode      
-00005201  DL_Timer_setCaptCompUpdateMethod
-000054a1  DL_Timer_setCaptureCompareOutCtl
-000058c1  DL_Timer_setCaptureCompareValue 
-0000521d  DL_Timer_setClockConfig         
-00003679  DL_UART_configBaudRate          
-00004431  DL_UART_init                    
-00005813  DL_UART_setClockConfig          
-00006978  DMAMSPM0_Config                 
-00003429  DMAMSPM0_close                  
-000036f9  DMAMSPM0_init                   
-00002b09  DMAMSPM0_setupTransfer          
-20200af0  DMAObject                       
-00005a4f  DMA_IRQHandler                  
-00005a4f  Default_Handler                 
-00003113  GROUP0_IRQHandler               
-00001e69  GROUP1_IRQHandler               
-00004479  HOSTclose                       
-00005a53  HOSTexit                        
-00003b51  HOSTlseek                       
-0000403d  HOSTopen                        
-00004159  HOSTread                        
-00003bbd  HOSTrename                      
-000044c1  HOSTunlink                      
-000041b1  HOSTwrite                       
-00005a4f  HardFault_Handler               
-00005a4f  I2C0_IRQHandler                 
-00005a4f  I2C1_IRQHandler                 
-00005a4f  NMI_Handler                     
-00005a4f  PendSV_Handler                  
-00005a4f  RTC_IRQHandler                  
-00005a57  Reset_Handler                   
-00004aff  RingBuf_construct               
-00003c29  RingBuf_getn                    
-00003ad9  RingBuf_put                     
-00003c95  RingBuf_putAdvance              
-0000439d  RingBuf_putPointer              
-00003559  RingBuf_putn                    
-00005a4f  SPI0_IRQHandler                 
-00005a4f  SPI1_IRQHandler                 
-00005a4f  SVC_Handler                     
-000057a1  SYSCFG_DL_AES_init              
-00004e75  SYSCFG_DL_CRC_init              
-000015a9  SYSCFG_DL_GPIO_init             
-000056d3  SYSCFG_DL_SYSCTL_init           
-000057b5  SYSCFG_DL_SYSTICK_init          
-00004551  SYSCFG_DL_TRNG_init             
-00004b89  SYSCFG_DL_init                  
-00003115  SYSCFG_DL_initPower             
-000058f1  SysTick_Handler                 
-00005a4f  TIMA0_IRQHandler                
-00005a4f  TIMA1_IRQHandler                
-00005a4f  TIMG0_IRQHandler                
-00005a4f  TIMG12_IRQHandler               
-00005a4f  TIMG6_IRQHandler                
-00005a4f  TIMG7_IRQHandler                
-00005a4f  TIMG8_IRQHandler                
-0000586d  TI_memcpy_small                 
-00005979  TI_memset_small                 
-000021a9  UART0_IRQHandler                
-00005a4f  UART1_IRQHandler                
-00003253  UART2_IRQHandler                
-00005a4f  UART3_IRQHandler                
-00006874  UARTMSPSupportFxns              
-00002019  UARTMSP_dmaRx                   
-00002f29  UARTMSP_enableInts              
-00005931  UARTMSP_eventCallback           
+0000762b  ADC0_IRQHandler                 
+0000762b  ADC1_IRQHandler                 
+0000762b  AES_IRQHandler                  
+0000762e  C$$EXIT                         
+000063a1  C$$IO$$                         
+0000762b  CANFD0_IRQHandler               
+00007957  CONFIG_UART_0                   
+0000762b  DAC0_IRQHandler                 
+000075b9  DL_Common_delayCycles           
+00005cb1  DL_DMA_initChannel              
+000030d1  DL_Timer_initFourCCPWMMode      
+00006d85  DL_Timer_setCaptCompUpdateMethod
+00007045  DL_Timer_setCaptureCompareOutCtl
+0000742d  DL_Timer_setCaptureCompareValue 
+00006da1  DL_Timer_setClockConfig         
+00004a99  DL_UART_configBaudRate          
+00005ddd  DL_UART_init                    
+0000737f  DL_UART_setClockConfig          
+00007a2c  DMAMSPM0_Config                 
+0000473d  DMAMSPM0_close                  
+00005f45  DMAMSPM0_disableChannel         
+00006e2d  DMAMSPM0_getCurrTransferSize    
+00004b19  DMAMSPM0_init                   
+00003c05  DMAMSPM0_setupTransfer          
+20200b2c  DMAObject                       
+0000762b  DMA_IRQHandler                  
+0000762b  Default_Handler                 
+00002877  GROUP0_IRQHandler               
+000023a1  GROUP1_IRQHandler               
+00005e25  HOSTclose                       
+0000762f  HOSTexit                        
+00004fe5  HOSTlseek                       
+00005799  HOSTopen                        
+0000590d  HOSTread                        
+00005051  HOSTrename                      
+00005e6d  HOSTunlink                      
+00005965  HOSTwrite                       
+0000762b  HardFault_Handler               
+0000762b  I2C0_IRQHandler                 
+0000762b  I2C1_IRQHandler                 
+0000762b  NMI_Handler                     
+0000762b  PendSV_Handler                  
+0000762b  RTC_IRQHandler                  
+00007633  Reset_Handler                   
+000065ef  RingBuf_construct               
+00006c09  RingBuf_flush                   
+00005c61  RingBuf_get                     
+0000750f  RingBuf_getCount                
+000050bd  RingBuf_getn                    
+00004ef9  RingBuf_put                     
+00005129  RingBuf_putAdvance              
+00005cfd  RingBuf_putPointer              
+0000486d  RingBuf_putn                    
+0000762b  SPI0_IRQHandler                 
+0000762b  SPI1_IRQHandler                 
+0000762b  SVC_Handler                     
+000072d1  SYSCFG_DL_AES_init              
+00006991  SYSCFG_DL_CRC_init              
+000012ed  SYSCFG_DL_GPIO_init             
+00007219  SYSCFG_DL_SYSCTL_init           
+000072e5  SYSCFG_DL_SYSTICK_init          
+00006011  SYSCFG_DL_TRNG_init             
+00006679  SYSCFG_DL_init                  
+00004429  SYSCFG_DL_initPower             
+0000745d  SysTick_Handler                 
+0000762b  TIMA0_IRQHandler                
+0000762b  TIMA1_IRQHandler                
+0000762b  TIMG0_IRQHandler                
+0000762b  TIMG12_IRQHandler               
+0000762b  TIMG6_IRQHandler                
+0000762b  TIMG7_IRQHandler                
+0000762b  TIMG8_IRQHandler                
+000073d9  TI_memcpy_small                 
+00007501  TI_memset_small                 
+00002029  UART0_IRQHandler                
+0000762b  UART1_IRQHandler                
+00003797  UART2_IRQHandler                
+0000762b  UART3_IRQHandler                
+000079dc  UARTMSPSupportFxns              
+00002879  UARTMSP_dmaRx                   
+00004b99  UARTMSP_dmaStopRx               
+0000423d  UARTMSP_enableInts              
+000074bb  UARTMSP_eventCallback           
 202008f0  UARTObject                      
-000050a5  UART_Params_init                
-00004bb5  UART_close                      
-00006980  UART_config                     
-000069a0  UART_count                      
-00006174  UART_defaultParams              
-00002305  UART_open                       
-00004b2d  UART_readBuffered               
-000037f9  UART_readCallback               
-00002e81  UART_readCancel                 
-000039e9  UART_readFullFeatured           
-00004b5b  UART_writeBuffered              
-00002661  UART_writeCallback              
-00003a61  UART_writeFullFeatured          
-20200b70  _CIOBUF_                        
-20200b70  __CIOBUF_                       
+00006c29  UART_Params_init                
+000066a5  UART_close                      
+00007a34  UART_config                     
+00007a22  UART_count                      
+0000797c  UART_defaultParams              
+00002a09  UART_open                       
+00005411  UART_read                       
+0000661d  UART_readBuffered               
+00004c19  UART_readCallback               
+000040ed  UART_readCancel                 
+00004e09  UART_readFullFeatured           
+00005477  UART_write                      
+0000664b  UART_writeBuffered              
+000032d9  UART_writeCallback              
+00004e81  UART_writeFullFeatured          
+20201440  _CIOBUF_                        
+20201440  __CIOBUF_                       
 20208000  __STACK_END                     
 00000200  __STACK_SIZE                    
 00000800  __SYSMEM_SIZE                   
@@ -787,127 +817,188 @@ address   name
 00000000  __TI_ATRegion2_region_sz        
 00000000  __TI_ATRegion2_src_addr         
 00000000  __TI_ATRegion2_trg_addr         
-00006a50  __TI_CINIT_Base                 
-00006a60  __TI_CINIT_Limit                
-00006a60  __TI_CINIT_Warm                 
-00006a3c  __TI_Handler_Table_Base         
-00006a48  __TI_Handler_Table_Limit        
-00004689  __TI_auto_init_nobinit_nopinit  
-0000487d  __TI_cleanup                    
-20200b20  __TI_cleanup_ptr                
-00003879  __TI_closefile                  
-000038f5  __TI_decompress_lzss            
-0000587f  __TI_decompress_none            
-0000425d  __TI_doflush                    
-20200b24  __TI_dtors_ptr                  
-20200b28  __TI_ft_end                     
+00007b5c  __TI_CINIT_Base                 
+00007b6c  __TI_CINIT_Limit                
+00007b6c  __TI_CINIT_Warm                 
+00007b48  __TI_Handler_Table_Base         
+00007b54  __TI_Handler_Table_Limit        
+00006189  __TI_auto_init_nobinit_nopinit  
+0000630d  __TI_cleanup                    
+20200bbc  __TI_cleanup_ptr                
+00004c99  __TI_closefile                  
+00004d15  __TI_decompress_lzss            
+000073eb  __TI_decompress_none            
+00005b19  __TI_doflush                    
+20200bc0  __TI_dtors_ptr                  
+20200bcc  __TI_ft_end                     
+000059bd  __TI_ltoa                       
 ffffffff  __TI_pprof_out_hndl             
-000000c1  __TI_printfi_nofloat            
+000000c1  __TI_printfi                    
 ffffffff  __TI_prof_data_size             
 ffffffff  __TI_prof_data_start            
-000048b1  __TI_readmsg                    
+00006341  __TI_readmsg                    
 00000000  __TI_static_base__              
-20200c90  __TI_tmpnams                    
-000048e5  __TI_writemsg                   
-00003ead  __TI_wrt_ok                     
-000056e9  __TI_zero_init_nomemset         
-00005a80  __aeabi_ctype_table_            
-00005a80  __aeabi_ctype_table_C           
-20200b2c  __aeabi_errno                   
-00005a19  __aeabi_errno_addr              
-00003877  __aeabi_idiv0                   
-00003b4f  __aeabi_ldiv0                   
-000050e5  __aeabi_llsl                    
-00004ff9  __aeabi_lmul                    
-000059c5  __aeabi_memclr                  
-000059c5  __aeabi_memclr4                 
-000059c5  __aeabi_memclr8                 
-00005a21  __aeabi_memcpy                  
-00005a21  __aeabi_memcpy4                 
-00005a21  __aeabi_memcpy8                 
-00005941  __aeabi_memset                  
-00005941  __aeabi_memset4                 
-00005941  __aeabi_memset8                 
-00004591  __aeabi_uidiv                   
-00004591  __aeabi_uidivmod                
-000057c9  __aeabi_uldivmod                
-000050e5  __ashldi3                       
+20201560  __TI_tmpnams                    
+00006375  __TI_writemsg                   
+000055a9  __TI_wrt_ok                     
+0000722f  __TI_zero_init_nomemset         
+000026ef  __adddf3                        
+00007650  __aeabi_ctype_table_            
+00007650  __aeabi_ctype_table_C           
+00005d49  __aeabi_d2iz                    
+000026ef  __aeabi_dadd                    
+000056d5  __aeabi_dcmpeq                  
+00005711  __aeabi_dcmpge                  
+00005725  __aeabi_dcmpgt                  
+000056fd  __aeabi_dcmple                  
+000056e9  __aeabi_dcmplt                  
+00002ebd  __aeabi_ddiv                    
+00003969  __aeabi_dmul                    
+000026e5  __aeabi_dsub                    
+20200bd0  __aeabi_errno                   
+00004a09  __aeabi_errno_addr              
+00006781  __aeabi_i2d                     
+00005a6d  __aeabi_idiv                    
+00004427  __aeabi_idiv0                   
+00005a6d  __aeabi_idivmod                 
+00004567  __aeabi_ldiv0                   
+00006c69  __aeabi_llsl                    
+00006b5d  __aeabi_lmul                    
+00007571  __aeabi_memclr                  
+00007571  __aeabi_memclr4                 
+00007571  __aeabi_memclr8                 
+000075fd  __aeabi_memcpy                  
+000075fd  __aeabi_memcpy4                 
+000075fd  __aeabi_memcpy8                 
+000074c9  __aeabi_memset                  
+000074c9  __aeabi_memset4                 
+000074c9  __aeabi_memset8                 
+00006051  __aeabi_uidiv                   
+00006051  __aeabi_uidivmod                
+000072f9  __aeabi_uldivmod                
+00006c69  __ashldi3                       
 ffffffff  __binit__                       
+000052d9  __cmpdf2                        
+00002ebd  __divdf3                        
+000052d9  __eqdf2                         
+00005d49  __fixdfsi                       
+00006781  __floatsidf                     
+00004f71  __gedf2                         
+00004f71  __gtdf2                         
+000052d9  __ledf2                         
+000052d9  __ltdf2                         
 UNDEFED   __mpu_init                      
-00004ff9  __muldi3                        
-000046c5  __muldsi3                       
+00003969  __muldf3                        
+00006b5d  __muldi3                        
+000061c5  __muldsi3                       
+000052d9  __nedf2                         
 20207e00  __stack                         
 20200000  __start___llvm_prf_bits         
 20200000  __start___llvm_prf_cnts         
 20200000  __stop___llvm_prf_bits          
 20200000  __stop___llvm_prf_cnts          
-00003071  __udivmoddi4                    
-00004f15  _c_int00_noargs                 
+000026e5  __subdf3                        
+00004385  __udivmoddi4                    
+00006a31  _c_int00_noargs                 
 20200980  _device                         
 20200800  _ftable                         
-20200b30  _lock                           
-00004737  _nop                            
+20200bd4  _lock                           
+00004c97  _nop                            
 20200a58  _stream                         
-20200000  _sys_memory                     
+20200c40  _sys_memory                     
 UNDEFED   _system_post_cinit              
-00005a71  _system_pre_init                
-20200b3c  _unlock                         
-00005a49  abort                           
-00002449  aligned_alloc                   
-000045d1  atoi                            
-00000f95  axon_36byte_frame_test          
-0000187d  axon_routine_main               
-00000929  axon_uart_loopback_test         
+0000764d  _system_pre_init                
+20200be0  _unlock                         
+00007625  abort                           
+00002da9  aligned_alloc                   
+00006091  atoi                            
+000035c1  axon_handle_afwup               
+00000f65  axon_handle_chkirq              
+00001a91  axon_handle_codepkt             
+00002fc9  axon_handle_errchk              
+000036ad  axon_handle_nop                 
+000015c1  axon_handle_setaxon             
+00003cd1  axon_handle_setokey             
+00000a91  axon_routine_main               
+000034d1  axon_test_record_command        
+000060d1  axon_test_record_crc_error      
+000048f9  axon_test_record_response       
 ffffffff  binit                           
-00004301  close                           
-00003779  crc16_tep                       
-20200b64  debug_byte1                     
-20200b48  debug_byte1_ng_count            
-20200b4c  debug_complete_count            
-20200b50  debug_frame_count               
-20200b65  debug_last_byte                 
-20200b54  debug_rx_count                  
-20200b66  debug_rx_index                  
-20200b58  debug_sync_reset_count          
-00004919  exit                            
-0000494d  finddevice                      
-0000338d  fputc                           
-00002761  fputs                           
-20200b68  frame_received                  
-00002941  free                            
-00005a39  fseek                           
-00003d6d  fseeko                          
-20200de0  g_button_1_event                
-20200df4  g_button_2_event                
-20200e08  g_coindet_event                 
-20200e1c  g_connector_event               
-20200e30  g_door_event                    
-20200e44  g_escrow_event                  
-20200e58  g_rotary_event                  
-20200e6c  g_soldout_event                 
-20200b60  g_systick_count                 
+00005c11  close                           
+20200b5c  debug_atirq_encrypted           
+20200b7c  debug_atirq_plain               
+20200c2b  debug_byte1                     
+20200bec  debug_byte1_ng_count            
+20200bf0  debug_chkirq_call_count         
+20200bf4  debug_cmd_ng_count              
+20200bf8  debug_complete_count            
+20200bca  debug_crc_calc                  
+20200bfc  debug_crc_ng_count              
+20200c28  debug_crc_recv                  
+20200c2c  debug_decrypted_id              
+20200c00  debug_header_ng_count           
+20200c2d  debug_last_byte                 
+20200c04  debug_led_event_count           
+20200c08  debug_len_ng_count              
+20200c0c  debug_rx_count                  
+20200c2e  debug_rx_index                  
+20200c10  debug_send_ok_count             
+20200c14  debug_sync_reset_count          
+000063a9  exit                            
+000063dd  finddevice                      
+00005f89  flush_uart_s2a_tx_buffer        
+000046a1  fputc                           
+000033d9  fputs                           
+20200c30  frame_received                  
+00003881  free                            
+000057f9  frexp                           
+000057f9  frexpl                          
+00007615  fseek                           
+00005201  fseeko                          
+20200bac  g_axon_status_shared            
+202016d8  g_button_1_event                
+202016ec  g_button_2_event                
+20201700  g_coindet_event                 
+20201714  g_connector_event               
+20201728  g_door_event                    
+2020173c  g_escrow_event                  
+20200c32  g_left_amount                   
+20200c33  g_right_amount                  
+20201750  g_rotary_event                  
+20201764  g_soldout_event                 
+20200c24  g_systick_count                 
 202009f8  g_uart_buffers                  
-000059d1  get_systick_count_ms            
-00003dd9  getdevice                       
-00003f11  init_uart_ports                 
+0000757d  get_systick_count_ms            
+0000526d  getdevice                       
+0000560d  init_uart_ports                 
 00000000  interruptVectors                
-00004ec5  lseek                           
-000043e7  main                            
-000059dd  malloc                          
-00002449  memalign                        
-00005041  memccpy                         
-20200e80  parmbuf                         
-000040fd  printf                          
-00005a41  remove                          
-20200d30  rx_complete_frame               
-20200b69  rx_complete_ready               
-20200d54  rx_frame                        
-20200b6a  rx_index                        
-00002a29  setvbuf                         
-000035f1  strcmp                          
-00004c91  unlink                          
-00005921  wcslen                          
-00004eed  write                           
+00003b2d  ldexp                           
+00003b2d  ldexpl                          
+000069e1  lseek                           
+00005d93  main                            
+00007589  malloc                          
+00002da9  memalign                        
+00006ba5  memccpy                         
+20201778  parmbuf                         
+00005855  printf                          
+00002551  receive_uart_s2a_packet         
+0000761d  remove                          
+20201628  rx_complete_frame               
+20200c35  rx_complete_ready               
+2020164c  rx_frame                        
+20200c36  rx_index                        
+20201600  rx_variable_frame               
+20200c37  rx_variable_length              
+20200c38  rx_variable_ready               
+00003b2d  scalbn                          
+00003b2d  scalbnl                         
+00004195  send_uart_s2a_packet            
+00003a4d  setvbuf                         
+00004a11  strcmp                          
+UNDEFED   uart_send_packet                
+000067ad  unlink                          
+0000749d  wcslen                          
+00006a09  write                           
 
 
 GLOBAL SYMBOLS: SORTED BY Symbol Address 
@@ -925,212 +1016,280 @@ address   name
 00000000  __TI_ATRegion2_trg_addr         
 00000000  __TI_static_base__              
 00000000  interruptVectors                
-000000c1  __TI_printfi_nofloat            
+000000c1  __TI_printfi                    
 00000200  __STACK_SIZE                    
 00000800  __SYSMEM_SIZE                   
-00000929  axon_uart_loopback_test         
-00000f95  axon_36byte_frame_test          
-000015a9  SYSCFG_DL_GPIO_init             
-0000187d  axon_routine_main               
-00001e69  GROUP1_IRQHandler               
-00002019  UARTMSP_dmaRx                   
-000021a9  UART0_IRQHandler                
-00002305  UART_open                       
-00002449  aligned_alloc                   
-00002449  memalign                        
-0000255d  DL_Timer_initFourCCPWMMode      
-00002661  UART_writeCallback              
-00002761  fputs                           
-00002941  free                            
-00002a29  setvbuf                         
-00002b09  DMAMSPM0_setupTransfer          
-00002e81  UART_readCancel                 
-00002f29  UARTMSP_enableInts              
-00003071  __udivmoddi4                    
-00003113  GROUP0_IRQHandler               
-00003115  SYSCFG_DL_initPower             
-00003253  UART2_IRQHandler                
-0000338d  fputc                           
-00003429  DMAMSPM0_close                  
-00003559  RingBuf_putn                    
-000035f1  strcmp                          
-00003679  DL_UART_configBaudRate          
-000036f9  DMAMSPM0_init                   
-00003779  crc16_tep                       
-000037f9  UART_readCallback               
-00003877  __aeabi_idiv0                   
-00003879  __TI_closefile                  
-000038f5  __TI_decompress_lzss            
-000039e9  UART_readFullFeatured           
-00003a61  UART_writeFullFeatured          
-00003ad9  RingBuf_put                     
-00003b4f  __aeabi_ldiv0                   
-00003b51  HOSTlseek                       
-00003bbd  HOSTrename                      
-00003c29  RingBuf_getn                    
-00003c95  RingBuf_putAdvance              
-00003d6d  fseeko                          
-00003dd9  getdevice                       
-00003ead  __TI_wrt_ok                     
-00003f11  init_uart_ports                 
-0000403d  HOSTopen                        
-000040fd  printf                          
-00004159  HOSTread                        
-000041b1  HOSTwrite                       
-0000425d  __TI_doflush                    
-00004301  close                           
-00004351  DL_DMA_initChannel              
-0000439d  RingBuf_putPointer              
-000043e7  main                            
-00004431  DL_UART_init                    
-00004479  HOSTclose                       
-000044c1  HOSTunlink                      
-00004551  SYSCFG_DL_TRNG_init             
-00004591  __aeabi_uidiv                   
-00004591  __aeabi_uidivmod                
-000045d1  atoi                            
-00004689  __TI_auto_init_nobinit_nopinit  
-000046c5  __muldsi3                       
-00004737  _nop                            
-0000487d  __TI_cleanup                    
-000048b1  __TI_readmsg                    
-000048e5  __TI_writemsg                   
-00004911  C$$IO$$                         
-00004919  exit                            
-0000494d  finddevice                      
-00004aff  RingBuf_construct               
-00004b2d  UART_readBuffered               
-00004b5b  UART_writeBuffered              
-00004b89  SYSCFG_DL_init                  
-00004bb5  UART_close                      
-00004c91  unlink                          
-00004e75  SYSCFG_DL_CRC_init              
-00004ec5  lseek                           
-00004eed  write                           
-00004f15  _c_int00_noargs                 
-00004ff9  __aeabi_lmul                    
-00004ff9  __muldi3                        
-00005041  memccpy                         
-000050a5  UART_Params_init                
-000050e5  __aeabi_llsl                    
-000050e5  __ashldi3                       
-00005201  DL_Timer_setCaptCompUpdateMethod
-0000521d  DL_Timer_setClockConfig         
-000054a1  DL_Timer_setCaptureCompareOutCtl
-000056d3  SYSCFG_DL_SYSCTL_init           
-000056e9  __TI_zero_init_nomemset         
-000057a1  SYSCFG_DL_AES_init              
-000057b5  SYSCFG_DL_SYSTICK_init          
-000057c9  __aeabi_uldivmod                
-00005813  DL_UART_setClockConfig          
-0000586d  TI_memcpy_small                 
-0000587f  __TI_decompress_none            
-000058c1  DL_Timer_setCaptureCompareValue 
-000058f1  SysTick_Handler                 
-00005921  wcslen                          
-00005931  UARTMSP_eventCallback           
-00005941  __aeabi_memset                  
-00005941  __aeabi_memset4                 
-00005941  __aeabi_memset8                 
-00005979  TI_memset_small                 
-000059c5  __aeabi_memclr                  
-000059c5  __aeabi_memclr4                 
-000059c5  __aeabi_memclr8                 
-000059d1  get_systick_count_ms            
-000059dd  malloc                          
-00005a0d  DL_Common_delayCycles           
-00005a19  __aeabi_errno_addr              
-00005a21  __aeabi_memcpy                  
-00005a21  __aeabi_memcpy4                 
-00005a21  __aeabi_memcpy8                 
-00005a39  fseek                           
-00005a41  remove                          
-00005a49  abort                           
-00005a4f  ADC0_IRQHandler                 
-00005a4f  ADC1_IRQHandler                 
-00005a4f  AES_IRQHandler                  
-00005a4f  CANFD0_IRQHandler               
-00005a4f  DAC0_IRQHandler                 
-00005a4f  DMA_IRQHandler                  
-00005a4f  Default_Handler                 
-00005a4f  HardFault_Handler               
-00005a4f  I2C0_IRQHandler                 
-00005a4f  I2C1_IRQHandler                 
-00005a4f  NMI_Handler                     
-00005a4f  PendSV_Handler                  
-00005a4f  RTC_IRQHandler                  
-00005a4f  SPI0_IRQHandler                 
-00005a4f  SPI1_IRQHandler                 
-00005a4f  SVC_Handler                     
-00005a4f  TIMA0_IRQHandler                
-00005a4f  TIMA1_IRQHandler                
-00005a4f  TIMG0_IRQHandler                
-00005a4f  TIMG12_IRQHandler               
-00005a4f  TIMG6_IRQHandler                
-00005a4f  TIMG7_IRQHandler                
-00005a4f  TIMG8_IRQHandler                
-00005a4f  UART1_IRQHandler                
-00005a4f  UART3_IRQHandler                
-00005a52  C$$EXIT                         
-00005a53  HOSTexit                        
-00005a57  Reset_Handler                   
-00005a71  _system_pre_init                
-00005a80  __aeabi_ctype_table_            
-00005a80  __aeabi_ctype_table_C           
-00005ea3  CONFIG_UART_0                   
-00006174  UART_defaultParams              
-00006874  UARTMSPSupportFxns              
-00006978  DMAMSPM0_Config                 
-00006980  UART_config                     
-000069a0  UART_count                      
-00006a3c  __TI_Handler_Table_Base         
-00006a48  __TI_Handler_Table_Limit        
-00006a50  __TI_CINIT_Base                 
-00006a60  __TI_CINIT_Limit                
-00006a60  __TI_CINIT_Warm                 
+00000a91  axon_routine_main               
+00000f65  axon_handle_chkirq              
+000012ed  SYSCFG_DL_GPIO_init             
+000015c1  axon_handle_setaxon             
+00001a91  axon_handle_codepkt             
+00002029  UART0_IRQHandler                
+000023a1  GROUP1_IRQHandler               
+00002551  receive_uart_s2a_packet         
+000026e5  __aeabi_dsub                    
+000026e5  __subdf3                        
+000026ef  __adddf3                        
+000026ef  __aeabi_dadd                    
+00002877  GROUP0_IRQHandler               
+00002879  UARTMSP_dmaRx                   
+00002a09  UART_open                       
+00002da9  aligned_alloc                   
+00002da9  memalign                        
+00002ebd  __aeabi_ddiv                    
+00002ebd  __divdf3                        
+00002fc9  axon_handle_errchk              
+000030d1  DL_Timer_initFourCCPWMMode      
+000032d9  UART_writeCallback              
+000033d9  fputs                           
+000034d1  axon_test_record_command        
+000035c1  axon_handle_afwup               
+000036ad  axon_handle_nop                 
+00003797  UART2_IRQHandler                
+00003881  free                            
+00003969  __aeabi_dmul                    
+00003969  __muldf3                        
+00003a4d  setvbuf                         
+00003b2d  ldexp                           
+00003b2d  ldexpl                          
+00003b2d  scalbn                          
+00003b2d  scalbnl                         
+00003c05  DMAMSPM0_setupTransfer          
+00003cd1  axon_handle_setokey             
+000040ed  UART_readCancel                 
+00004195  send_uart_s2a_packet            
+0000423d  UARTMSP_enableInts              
+00004385  __udivmoddi4                    
+00004427  __aeabi_idiv0                   
+00004429  SYSCFG_DL_initPower             
+00004567  __aeabi_ldiv0                   
+000046a1  fputc                           
+0000473d  DMAMSPM0_close                  
+0000486d  RingBuf_putn                    
+000048f9  axon_test_record_response       
+00004a09  __aeabi_errno_addr              
+00004a11  strcmp                          
+00004a99  DL_UART_configBaudRate          
+00004b19  DMAMSPM0_init                   
+00004b99  UARTMSP_dmaStopRx               
+00004c19  UART_readCallback               
+00004c97  _nop                            
+00004c99  __TI_closefile                  
+00004d15  __TI_decompress_lzss            
+00004e09  UART_readFullFeatured           
+00004e81  UART_writeFullFeatured          
+00004ef9  RingBuf_put                     
+00004f71  __gedf2                         
+00004f71  __gtdf2                         
+00004fe5  HOSTlseek                       
+00005051  HOSTrename                      
+000050bd  RingBuf_getn                    
+00005129  RingBuf_putAdvance              
+00005201  fseeko                          
+0000526d  getdevice                       
+000052d9  __cmpdf2                        
+000052d9  __eqdf2                         
+000052d9  __ledf2                         
+000052d9  __ltdf2                         
+000052d9  __nedf2                         
+00005411  UART_read                       
+00005477  UART_write                      
+000055a9  __TI_wrt_ok                     
+0000560d  init_uart_ports                 
+000056d5  __aeabi_dcmpeq                  
+000056e9  __aeabi_dcmplt                  
+000056fd  __aeabi_dcmple                  
+00005711  __aeabi_dcmpge                  
+00005725  __aeabi_dcmpgt                  
+00005799  HOSTopen                        
+000057f9  frexp                           
+000057f9  frexpl                          
+00005855  printf                          
+0000590d  HOSTread                        
+00005965  HOSTwrite                       
+000059bd  __TI_ltoa                       
+00005a6d  __aeabi_idiv                    
+00005a6d  __aeabi_idivmod                 
+00005b19  __TI_doflush                    
+00005c11  close                           
+00005c61  RingBuf_get                     
+00005cb1  DL_DMA_initChannel              
+00005cfd  RingBuf_putPointer              
+00005d49  __aeabi_d2iz                    
+00005d49  __fixdfsi                       
+00005d93  main                            
+00005ddd  DL_UART_init                    
+00005e25  HOSTclose                       
+00005e6d  HOSTunlink                      
+00005f45  DMAMSPM0_disableChannel         
+00005f89  flush_uart_s2a_tx_buffer        
+00006011  SYSCFG_DL_TRNG_init             
+00006051  __aeabi_uidiv                   
+00006051  __aeabi_uidivmod                
+00006091  atoi                            
+000060d1  axon_test_record_crc_error      
+00006189  __TI_auto_init_nobinit_nopinit  
+000061c5  __muldsi3                       
+0000630d  __TI_cleanup                    
+00006341  __TI_readmsg                    
+00006375  __TI_writemsg                   
+000063a1  C$$IO$$                         
+000063a9  exit                            
+000063dd  finddevice                      
+000065ef  RingBuf_construct               
+0000661d  UART_readBuffered               
+0000664b  UART_writeBuffered              
+00006679  SYSCFG_DL_init                  
+000066a5  UART_close                      
+00006781  __aeabi_i2d                     
+00006781  __floatsidf                     
+000067ad  unlink                          
+00006991  SYSCFG_DL_CRC_init              
+000069e1  lseek                           
+00006a09  write                           
+00006a31  _c_int00_noargs                 
+00006b5d  __aeabi_lmul                    
+00006b5d  __muldi3                        
+00006ba5  memccpy                         
+00006c09  RingBuf_flush                   
+00006c29  UART_Params_init                
+00006c69  __aeabi_llsl                    
+00006c69  __ashldi3                       
+00006d85  DL_Timer_setCaptCompUpdateMethod
+00006da1  DL_Timer_setClockConfig         
+00006e2d  DMAMSPM0_getCurrTransferSize    
+00007045  DL_Timer_setCaptureCompareOutCtl
+00007219  SYSCFG_DL_SYSCTL_init           
+0000722f  __TI_zero_init_nomemset         
+000072d1  SYSCFG_DL_AES_init              
+000072e5  SYSCFG_DL_SYSTICK_init          
+000072f9  __aeabi_uldivmod                
+0000737f  DL_UART_setClockConfig          
+000073d9  TI_memcpy_small                 
+000073eb  __TI_decompress_none            
+0000742d  DL_Timer_setCaptureCompareValue 
+0000745d  SysTick_Handler                 
+0000749d  wcslen                          
+000074bb  UARTMSP_eventCallback           
+000074c9  __aeabi_memset                  
+000074c9  __aeabi_memset4                 
+000074c9  __aeabi_memset8                 
+00007501  TI_memset_small                 
+0000750f  RingBuf_getCount                
+00007571  __aeabi_memclr                  
+00007571  __aeabi_memclr4                 
+00007571  __aeabi_memclr8                 
+0000757d  get_systick_count_ms            
+00007589  malloc                          
+000075b9  DL_Common_delayCycles           
+000075fd  __aeabi_memcpy                  
+000075fd  __aeabi_memcpy4                 
+000075fd  __aeabi_memcpy8                 
+00007615  fseek                           
+0000761d  remove                          
+00007625  abort                           
+0000762b  ADC0_IRQHandler                 
+0000762b  ADC1_IRQHandler                 
+0000762b  AES_IRQHandler                  
+0000762b  CANFD0_IRQHandler               
+0000762b  DAC0_IRQHandler                 
+0000762b  DMA_IRQHandler                  
+0000762b  Default_Handler                 
+0000762b  HardFault_Handler               
+0000762b  I2C0_IRQHandler                 
+0000762b  I2C1_IRQHandler                 
+0000762b  NMI_Handler                     
+0000762b  PendSV_Handler                  
+0000762b  RTC_IRQHandler                  
+0000762b  SPI0_IRQHandler                 
+0000762b  SPI1_IRQHandler                 
+0000762b  SVC_Handler                     
+0000762b  TIMA0_IRQHandler                
+0000762b  TIMA1_IRQHandler                
+0000762b  TIMG0_IRQHandler                
+0000762b  TIMG12_IRQHandler               
+0000762b  TIMG6_IRQHandler                
+0000762b  TIMG7_IRQHandler                
+0000762b  TIMG8_IRQHandler                
+0000762b  UART1_IRQHandler                
+0000762b  UART3_IRQHandler                
+0000762e  C$$EXIT                         
+0000762f  HOSTexit                        
+00007633  Reset_Handler                   
+0000764d  _system_pre_init                
+00007650  __aeabi_ctype_table_            
+00007650  __aeabi_ctype_table_C           
+00007957  CONFIG_UART_0                   
+0000797c  UART_defaultParams              
+000079dc  UARTMSPSupportFxns              
+00007a22  UART_count                      
+00007a2c  DMAMSPM0_Config                 
+00007a34  UART_config                     
+00007b48  __TI_Handler_Table_Base         
+00007b54  __TI_Handler_Table_Limit        
+00007b5c  __TI_CINIT_Base                 
+00007b6c  __TI_CINIT_Limit                
+00007b6c  __TI_CINIT_Warm                 
 20200000  __start___llvm_prf_bits         
 20200000  __start___llvm_prf_cnts         
 20200000  __stop___llvm_prf_bits          
 20200000  __stop___llvm_prf_cnts          
-20200000  _sys_memory                     
 20200800  _ftable                         
 202008f0  UARTObject                      
 20200980  _device                         
 202009f8  g_uart_buffers                  
 20200a58  _stream                         
-20200af0  DMAObject                       
-20200b20  __TI_cleanup_ptr                
-20200b24  __TI_dtors_ptr                  
-20200b28  __TI_ft_end                     
-20200b2c  __aeabi_errno                   
-20200b30  _lock                           
-20200b3c  _unlock                         
-20200b48  debug_byte1_ng_count            
-20200b4c  debug_complete_count            
-20200b50  debug_frame_count               
-20200b54  debug_rx_count                  
-20200b58  debug_sync_reset_count          
-20200b60  g_systick_count                 
-20200b64  debug_byte1                     
-20200b65  debug_last_byte                 
-20200b66  debug_rx_index                  
-20200b68  frame_received                  
-20200b69  rx_complete_ready               
-20200b6a  rx_index                        
-20200b70  _CIOBUF_                        
-20200b70  __CIOBUF_                       
-20200c90  __TI_tmpnams                    
-20200d30  rx_complete_frame               
-20200d54  rx_frame                        
-20200de0  g_button_1_event                
-20200df4  g_button_2_event                
-20200e08  g_coindet_event                 
-20200e1c  g_connector_event               
-20200e30  g_door_event                    
-20200e44  g_escrow_event                  
-20200e58  g_rotary_event                  
-20200e6c  g_soldout_event                 
-20200e80  parmbuf                         
+20200b2c  DMAObject                       
+20200b5c  debug_atirq_encrypted           
+20200b7c  debug_atirq_plain               
+20200bac  g_axon_status_shared            
+20200bbc  __TI_cleanup_ptr                
+20200bc0  __TI_dtors_ptr                  
+20200bca  debug_crc_calc                  
+20200bcc  __TI_ft_end                     
+20200bd0  __aeabi_errno                   
+20200bd4  _lock                           
+20200be0  _unlock                         
+20200bec  debug_byte1_ng_count            
+20200bf0  debug_chkirq_call_count         
+20200bf4  debug_cmd_ng_count              
+20200bf8  debug_complete_count            
+20200bfc  debug_crc_ng_count              
+20200c00  debug_header_ng_count           
+20200c04  debug_led_event_count           
+20200c08  debug_len_ng_count              
+20200c0c  debug_rx_count                  
+20200c10  debug_send_ok_count             
+20200c14  debug_sync_reset_count          
+20200c24  g_systick_count                 
+20200c28  debug_crc_recv                  
+20200c2b  debug_byte1                     
+20200c2c  debug_decrypted_id              
+20200c2d  debug_last_byte                 
+20200c2e  debug_rx_index                  
+20200c30  frame_received                  
+20200c32  g_left_amount                   
+20200c33  g_right_amount                  
+20200c35  rx_complete_ready               
+20200c36  rx_index                        
+20200c37  rx_variable_length              
+20200c38  rx_variable_ready               
+20200c40  _sys_memory                     
+20201440  _CIOBUF_                        
+20201440  __CIOBUF_                       
+20201560  __TI_tmpnams                    
+20201600  rx_variable_frame               
+20201628  rx_complete_frame               
+2020164c  rx_frame                        
+202016d8  g_button_1_event                
+202016ec  g_button_2_event                
+20201700  g_coindet_event                 
+20201714  g_connector_event               
+20201728  g_door_event                    
+2020173c  g_escrow_event                  
+20201750  g_rotary_event                  
+20201764  g_soldout_event                 
+20201778  parmbuf                         
 20207e00  __stack                         
 20208000  __STACK_END                     
 ffffffff  __TI_pprof_out_hndl             
@@ -1140,5 +1299,6 @@ ffffffff  __binit__
 ffffffff  binit                           
 UNDEFED   __mpu_init                      
 UNDEFED   _system_post_cinit              
+UNDEFED   uart_send_packet                
 
-[226 symbols]
+[295 symbols]

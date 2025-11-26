@@ -169,6 +169,40 @@ bool aes_decrypt_cbc(const uint8_t* encrypted_data, uint8_t* decrypted_data)
     return true;
 }
 
+/**
+ * @brief 任意のパケットをUART送信（汎用関数）
+ * @param data 送信データバッファ
+ * @param len 送信データ長
+ * @return true: 成功, false: 失敗
+ */
+bool uart_send_packet(const uint8_t* data, size_t len)
+{
+    if (data == NULL || len == 0) {
+        return false;
+    }
+    
+    // 送信前に待機（UARTバッファとレシーバー準備）
+    for (volatile int i = 0; i < 5000; i++);
+    
+    // UART送信（確実に1バイトずつ送信）
+    for (size_t i = 0; i < len; i++) {
+        // TXFIFOが空になるまで待機
+        while (!DL_UART_isTXFIFOEmpty(S2A_UART_INST)) {
+            __NOP();
+        }
+        
+        // データ送信
+        DL_UART_transmitData(S2A_UART_INST, data[i]);
+        
+        // 送信完了待機
+        while (DL_UART_isBusy(S2A_UART_INST)) {
+            __NOP();
+        }
+    }
+    
+    return true;
+}
+
 bool send_ack_frame(void)
 {
     uint8_t tx_frame[ACK_NACK_FRAME_SIZE] = {

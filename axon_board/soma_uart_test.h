@@ -76,6 +76,12 @@ void soma_uart_init(void);
 /// @return true: 成功, false: 失敗
 bool aes_decrypt_cbc(const uint8_t* encrypted_data, uint8_t* decrypted_data);
 
+/// @brief 任意のパケットをUART送信（汎用関数）
+/// @param data 送信データバッファ
+/// @param len 送信データ長
+/// @return true: 成功, false: 失敗
+bool uart_send_packet(const uint8_t* data, size_t len);
+
 /// @brief ACKフレーム送信
 /// @return true: 成功, false: 失敗
 bool send_ack_frame(void);

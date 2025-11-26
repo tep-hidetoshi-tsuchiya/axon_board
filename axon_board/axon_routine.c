@@ -16,6 +16,7 @@
 #include "event.h"
 #include "soma_uart_test.h"
 #include "protocol/src/s2a_packet.h"  // CHKIRQ/SETAXON等のハンドラ
+#include "axon_status.h"  // AXON状態管理構造体
 
 #define POLLING_INTERVAL_MS (500U)
 #define SWITCH_DEBOUNCE_US  (50U)
@@ -53,6 +54,13 @@ button_event_t g_door_event;        // ドア開閉検知
 
 button_event_t g_button_1_event;
 button_event_t g_button_2_event;
+
+// SOMA-AXON共有状態（protocol/src/s2a_packet.cから参照）
+volatile axon_status_shared_t g_axon_status_shared = {0};
+
+// 7セグLED表示値（protocol/src/s2a_packet.cから参照）
+uint8_t g_left_amount = 0;
+uint8_t g_right_amount = 0;
 
 static inline void _change_status(axon_status_t* axon, terminal_status_t new_status) {
     if (axon->status != new_status &&
