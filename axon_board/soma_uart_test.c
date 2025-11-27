@@ -30,6 +30,9 @@ typedef struct {
 
 volatile debug_frame_t debug_frames[DEBUG_FRAME_HISTORY_SIZE] = {0};
 volatile uint8_t debug_frame_index = 0;
+#endif
+
+// デバッグ変数（グローバルスコープ：isr.cとsoma_uart_test.cで共有）
 volatile uint32_t debug_rx_count = 0;
 volatile uint32_t debug_frame_count = 0;
 volatile uint32_t debug_sync_reset_count = 0;
@@ -38,7 +41,13 @@ volatile uint8_t debug_last_byte = 0;
 volatile uint8_t debug_rx_index = 0;
 volatile uint8_t debug_byte1 = 0;
 volatile uint32_t debug_byte1_ng_count = 0;
-#endif
+volatile uint32_t debug_isr_call_count = 0;    // ISR呼び出し回数
+volatile uint32_t debug_iidx_value = 0;        // 最後のiidx値
+volatile uint32_t debug_fifo_empty_count = 0;  // FIFO空判定回数
+volatile uint32_t debug_uart_stat_value = 0;   // 最後のUART STAT値
+volatile uint32_t debug_rxdata_raw_value = 0;  // 最後のRXDATA生値
+volatile uint32_t debug_overrun_count = 0;     // RXオーバーラン検出回数
+volatile uint32_t debug_framing_error_count = 0; // フレーミングエラー検出回数
 
 // AES-128キー（16バイト固定）
 // 注意: 本番環境では安全な方法でキーを管理してください
@@ -519,9 +528,11 @@ bool axon_uart_loopback_test(void)
     
     // デバッグ情報表示
     printf("\n[POST-RX] Debug Info:\n");
+    printf("  debug_isr_call_count = %lu (ISR invocations)\n", (unsigned long)debug_isr_call_count);
     printf("  debug_rx_count = %lu (total bytes received in ISR)\n", (unsigned long)debug_rx_count);
     printf("  debug_frame_count = %lu\n", (unsigned long)debug_frame_count);
     printf("  debug_complete_count = %lu\n", (unsigned long)debug_complete_count);
+    printf("  debug_iidx_value = 0x%08lX (last interrupt index)\n", (unsigned long)debug_iidx_value);
     printf("  debug_last_byte = 0x%02X\n", debug_last_byte);
     printf("  debug_rx_index = %d\n", debug_rx_index);
     printf("  rx_index = %d\n", rx_index);

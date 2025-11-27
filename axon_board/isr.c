@@ -231,51 +231,58 @@ void UART0_IRQHandler(void) {
     // SOMA UARTテスト用: 36バイトフレーム受信処理
     uint32_t iidx = DL_UART_getPendingInterrupt(S2A_UART_INST);
     
-    // 割り込みインデックスで判定（ビットマスクではなくインデックス値）
-    if (iidx == DL_UART_IIDX_RX) {
-        // ★修正: 1割り込み = 1バイト処理（whileループ削除）
-        // FIFO threshold = 1バイトに設定しているため、whileループは不要
+    // デバッグ: ISR呼び出しカウント
+    debug_isr_call_count++;
+    debug_iidx_value = iidx;
+    debug_uart_stat_value = S2A_UART_INST->STAT;
+    
+    // RXエラーチェック（Overrun, Framing）
+    uint32_t error_status = S2A_UART_INST->STAT & ((1 << 11) | (1 << 10));
+    if (error_status) {
+        // エラー種別を記録
+        extern volatile uint32_t debug_overrun_count;
+        extern volatile uint32_t debug_framing_error_count;
+        if (error_status & (1 << 11)) debug_overrun_count++;     // bit11: RX Overrun
+        if (error_status & (1 << 10)) debug_framing_error_count++; // bit10: Framing Error
         
-        // FIFOチェック（念のため）
-        if (DL_UART_isRXFIFOEmpty(S2A_UART_INST)) {
-            return;  // データなし（通常は発生しない）
+        // エラー発生時: FIFO全体をクリア＋受信状態をリセット
+        while (!DL_UART_isRXFIFOEmpty(S2A_UART_INST)) {
+            DL_UART_receiveData(S2A_UART_INST);  // FIFO全バイト破棄
         }
-        
+        rx_index = 0;  // フレーム受信状態をリセット
+        debug_sync_reset_count++;
+        return;
+    }
+    
+    // iidxの値に関わらず、RX FIFOにデータがあれば処理
+    // FIFO threshold = 4バイト → whileループで全バイト取得（オーバーラン対策）
+    while (!DL_UART_isRXFIFOEmpty(S2A_UART_INST)) {
         uint8_t b = DL_UART_receiveData(S2A_UART_INST);
         
         // デバッグ: 受信バイトカウント
         debug_rx_count++;
         debug_last_byte = b;
-        
+        debug_rxdata_raw_value = b;
         
         // フレーム同期: 2バイトヘッダー(0x14 0x20)を確実に検出
         if (rx_index == 0) {
-            // 1バイト目: 0x14でなければ破棄して次の割り込みを待つ
+            // 1バイト目: 0x14でなければ破棄
             if (b == 0x14) {
                 rx_frame[rx_index++] = b;
-                debug_rx_index = rx_index;
             }
-            // 0x14以外は何もせず破棄（次の割り込みでまたrx_index==0から再試行）
         } else if (rx_index == 1) {
-            // 2バイト目: 値を記録（デバッグ用）
-            debug_byte1 = b;
-            
             // 2バイト目: 0x20でなければリセット
+            debug_byte1 = b;
             if (b == 0x20) {
-                // 正しいヘッダー2バイト目
                 rx_frame[rx_index++] = b;
-                debug_rx_index = rx_index;
             } else {
                 // ヘッダー不一致 → リセット
                 debug_byte1_ng_count++;
                 debug_sync_reset_count++;
                 rx_index = 0;
-                debug_rx_index = rx_index;
-                
-                // ★修正: 受信したバイトが0x14なら次のフレームの先頭として保存
+                // 受信したバイトが0x14なら次のフレームの先頭として保存
                 if (b == 0x14) {
                     rx_frame[rx_index++] = b;
-                    debug_rx_index = rx_index;
                 }
             }
         } else {
@@ -288,7 +295,7 @@ void UART0_IRQHandler(void) {
             if (rx_index >= 2) {
                 uint8_t header = rx_frame[0];
                 uint8_t length = rx_frame[1];
-                expected_length = 2 + length + 2;  // Header(1) + Length(1) + Data(length) + CRC16(2)
+                expected_length = 1 + 1 + length + 2;  // Header(1) + Length(1) + Data(length) + CRC16(2)
                 
                 // フレーム受信完了判定
                 if (rx_index >= expected_length) {
@@ -296,9 +303,11 @@ void UART0_IRQHandler(void) {
                     
                     // 36バイトフレームは従来バッファ、それ以外は可変長バッファへ
                     if (expected_length == AXON_FRAME_SIZE) {
+                        // 前のフレームがまだ処理されていない場合は上書き（最新を優先）
                         memcpy(rx_complete_frame, rx_frame, AXON_FRAME_SIZE);
                         rx_complete_ready = 1;
                     } else if (expected_length <= AXON_MAX_FRAME_SIZE) {
+                        // 可変長フレームも同様に上書き
                         memcpy(rx_variable_frame, rx_frame, expected_length);
                         rx_variable_length = expected_length;
                         rx_variable_ready = 1;
@@ -306,11 +315,16 @@ void UART0_IRQHandler(void) {
                     
                     frame_received = 1;
                     rx_index = 0;
-                    debug_rx_index = rx_index;
                 }
             }
         }
+    }  // while (!DL_UART_isRXFIFOEmpty)の閉じ括弧
+    
+    // デバッグ: FIFO空判定回数
+    if (DL_UART_isRXFIFOEmpty(S2A_UART_INST)) {
+        debug_fifo_empty_count++;
     }
+    
 #else
     // SOMA_BOARD用の既存UART処理
     UARTMSP_interruptHandler((UART_Handle)&UART_config[0]);

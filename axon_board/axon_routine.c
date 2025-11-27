@@ -229,7 +229,7 @@ void axon_routine_main(void* args) {
         if (!axon_36byte_frame_test()) {
             // テスト失敗 - 赤LED点滅
             printf("36-byte Frame Test FAILED!\n");
-            while (1) {y
+            while (1) {
                 DL_GPIO_togglePins(GPIOB, DL_GPIO_PIN_0);  // RED LED blink
                 delay_cycles(16000000);  // 0.5秒
             }
@@ -243,17 +243,70 @@ void axon_routine_main(void* args) {
     }
     #endif
     
+    // UART0設定情報とPort1/Port2構成を表示
+    printf("\r\n");
+    printf("[UART0 Configuration]\r\n");
+    printf("Base Address: 0x%08X (UART0)\r\n", (unsigned int)S2A_UART_INST);
+    printf("Baudrate    : 115200 bps\r\n");
+    printf("Format      : 8N1 (8bit, No parity, 1 stop)\r\n");
+    printf("SOMA Comm   : PA10(TX/PINCM21), PA11(RX/PINCM22)\r\n");
+    printf("\r\n");
+    printf("[Port Configuration]\r\n");
+    printf("Port1 (AXON): Uses UART0 for SOMA communication\r\n");
+    printf("              TX via PA10, RX via PA11\r\n");
+    printf("Port2 (AXON): Uses UART0 for SOMA communication\r\n");
+    printf("              TX via PA10, RX via PA11\r\n");
+    printf("Note: Both ports share same UART0 hardware\r\n");
+    printf("      Multiplexed via MUX control signals\r\n");
+    printf("\r\n");
+    printf("[ISR Configuration]\r\n");
+    printf("DL_UART_IIDX_RX = 0x%X (expected for RX interrupt)\r\n", DL_UART_IIDX_RX);
+    printf("========================================\r\n");
+    printf("\r\n");
     
+    // ========== UART初期化について ==========
+    // AXON_BOARD: UART0は既にSYSCFG_DL_init()内の_msp_peripheral_uart_init()で初期化済み
+    //             ISRベース（UART0_IRQHandler）で36バイトフレーム受信を処理
+    //             init_uart_ports()は呼ばない（SOMA_BOARD専用、DMA方式と競合）
+    // 
+    // SOMA_BOARD: init_uart_ports()でUART1/UART2をDMA+コールバック方式で初期化
+    //             3バイトパケット通信に使用
+    #ifdef SOMA_BOARD
     uart_packet_status_t status = init_uart_ports();
     if (status != UART_PACKET_STATUS_SUCCESS) {
         while (1) {
             __WFI();
         }
     }
-
-    // 注意: soma_uart_init()は36バイトフレーム/AES暗号化通信用のテスト関数です。
-    // 通常のSOMA-AXON間通信（3バイトパケット、0xFF header）とは互換性がありません。
-    // 本番動作では呼び出さず、init_uart_ports()で初期化されたUARTドライバを使用してください。
+    #else
+    // AXON_BOARD: 起動時にUART0 RX FIFOをクリア（Port切り替え時の残留データ対策）
+    NVIC_DisableIRQ(UART0_INT_IRQn);  // クリア中は割り込み無効
+    
+    // フェーズ1: 既存FIFOデータをクリア
+    uint32_t clear_count = 0;
+    while (!DL_UART_isRXFIFOEmpty(S2A_UART_INST) && clear_count < 100) {
+        DL_UART_receiveData(S2A_UART_INST);
+        clear_count++;
+    }
+    
+    // フェーズ2: 500ms待機して遅延到着データも受信
+    delay_cycles(CPUCLK_FREQ / 2);  // 500ms待機
+    while (!DL_UART_isRXFIFOEmpty(S2A_UART_INST) && clear_count < 200) {
+        DL_UART_receiveData(S2A_UART_INST);
+        clear_count++;
+    }
+    
+    // 受信状態変数もリセット
+    extern volatile uint8_t rx_index;
+    extern volatile uint32_t debug_rx_count;
+    extern volatile uint32_t debug_complete_count;
+    rx_index = 0;
+    debug_rx_count = 0;
+    debug_complete_count = 0;
+    
+    NVIC_EnableIRQ(UART0_INT_IRQn);  // クリア完了後、割り込み有効化
+    printf("UART0 RX FIFO cleared (%lu bytes, with 500ms delay)\r\n", (unsigned long)clear_count);
+    #endif
 
     // ==========================================
     // RGB色フェード設定
@@ -386,6 +439,61 @@ void axon_routine_main(void* args) {
         extern volatile uint8_t rx_complete_ready;
         extern uint8_t rx_complete_frame[36];
         
+        // デバッグ変数の外部宣言（soma_uart_test.h で定義済み）
+        extern volatile uint32_t debug_rx_count;
+        extern volatile uint32_t debug_complete_count;
+        extern volatile uint32_t debug_sync_reset_count;
+        extern volatile uint8_t debug_last_byte;
+        
+        // デバッグ出力 - テスト中は無効化（リアルタイム性優先）
+        #if 0  // デバッグ出力を完全無効化
+        extern volatile uint8_t debug_byte1;
+        extern volatile uint32_t debug_byte1_ng_count;
+        extern volatile uint32_t debug_isr_call_count;  // ISR呼び出し回数
+        extern volatile uint32_t debug_iidx_value;      // 最後のiidx値
+        extern volatile uint32_t debug_fifo_empty_count; // FIFO空判定回数
+        extern volatile uint32_t debug_uart_stat_value;  // UART STAT値
+        extern volatile uint32_t debug_rxdata_raw_value; // RXDATA生値
+        static systick_t last_debug_time = 0;
+        static uint32_t debug_output_counter = 0;
+        systick_t current_time = get_systick_count_ms();
+        if ((current_time - last_debug_time) >= 200) {  // 200msごとに変更（負荷軽減）
+            debug_output_counter++;
+            extern volatile uint32_t debug_overrun_count;
+            extern volatile uint32_t debug_framing_error_count;
+            printf("[DBG] isr=%lu, iidx=0x%lX, rx=%lu, cmp=%lu, rdy=%d, last=0x%02X, b1=0x%02X, fifo_e=%lu\n",
+                   (unsigned long)debug_isr_call_count,
+                   (unsigned long)debug_iidx_value,
+                   (unsigned long)debug_rx_count,
+                   (unsigned long)debug_complete_count,
+                   rx_complete_ready,
+                   debug_last_byte,
+                   debug_byte1,
+                   (unsigned long)debug_fifo_empty_count);
+            printf("[DBG] STAT=0x%08lX, RXDATA=0x%08lX, sync_rst=%lu, OVERRUN=%lu, FRM_ERR=%lu\n",
+                   (unsigned long)debug_uart_stat_value,
+                   (unsigned long)debug_rxdata_raw_value,
+                   (unsigned long)debug_sync_reset_count,
+                   (unsigned long)debug_overrun_count,
+                   (unsigned long)debug_framing_error_count);
+            NVIC_EnableIRQ(UART0_INT_IRQn);  // printf()完了後、割り込み再有効化
+            
+            // 5秒ごとにUART STATレジスタを表示（より詳細な診断）
+            if (debug_output_counter % 50 == 0) {
+                NVIC_DisableIRQ(UART0_INT_IRQn);  // printf()前に割り込み無効化
+                uint32_t uart_stat = S2A_UART_INST->STAT;
+                printf("[UART_STAT] 0x%08lX (RXOE=%d, RXFE=%d, BUSY=%d, IDLE=%d)\n",
+                       (unsigned long)uart_stat,
+                       (uart_stat & (1 << 11)) ? 1 : 0,  // bit11: RX Overrun Error
+                       (uart_stat & (1 << 10)) ? 1 : 0,  // bit10: RX Framing Error
+                       (uart_stat & (1 << 7)) ? 1 : 0,   // bit7: UART Busy
+                       (uart_stat & (1 << 1)) ? 1 : 0);  // bit1: UART Idle
+                NVIC_EnableIRQ(UART0_INT_IRQn);  // printf()完了後、割り込み再有効化
+            }
+            last_debug_time = current_time;
+        }
+        #endif  // デバッグ出力無効化終了
+        
         if (rx_complete_ready) {
             // フレームを処理（protocol/src/s2a_packet.cの各ハンドラを呼び出し）
             uint8_t header = rx_complete_frame[0];
@@ -400,10 +508,25 @@ void axon_routine_main(void* args) {
                 
                 switch (cmd_id) {
                     case 0x49:  // CHKIRQ - ポート確認シーケンス
+                        // デバッグ出力無効化（リアルタイム性優先）
+                        #if 0
+                        NVIC_DisableIRQ(UART0_INT_IRQn);
+                        printf("[CHKIRQ] Received! Header=0x%02X, Len=0x%02X, CmdID=0x%02X\n",
+                               header, length, cmd_id);
+                        NVIC_EnableIRQ(UART0_INT_IRQn);
+                        #endif
                         handled = axon_handle_chkirq(rx_complete_frame);
+                        #if 0
                         if (handled) {
-                            // CHKIRQ成功 - IRQは既にクリア済み（axon_handle_chkirq内で処理）
+                            NVIC_DisableIRQ(UART0_INT_IRQn);
+                            printf("[CHKIRQ] Handler returned success\n");
+                            NVIC_EnableIRQ(UART0_INT_IRQn);
+                        } else {
+                            NVIC_DisableIRQ(UART0_INT_IRQn);
+                            printf("[CHKIRQ] Handler returned failure\n");
+                            NVIC_EnableIRQ(UART0_INT_IRQn);
                         }
+                        #endif
                         break;
                         
                     case 0x4A:  // SETAXON - AXON設定書き込み
@@ -470,10 +593,14 @@ void axon_routine_main(void* args) {
             rx_variable_length = 0;
         }
 
+
+
         // ==========================================
         // 旧POC用UART受信処理（3バイトパケット）
+        // 注意: SOMA_BOARD専用（AXON_BOARDでは使用しない）
         // ==========================================
-        status = receive_uart_s2a_packet(&s2a_packet);
+#ifdef SOMA_BOARD
+        uart_packet_status_t status = receive_uart_s2a_packet(&s2a_packet);
         
         if (status == UART_PACKET_STATUS_SUCCESS) {
             // 受信成功時は1msウェイト
@@ -578,6 +705,7 @@ void axon_routine_main(void* args) {
             _change_status(&axon_state, STATE_NOTIFY);
             DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, UART_IRQ_OUT_PIN);
         }
+#endif  // SOMA_BOARD
 
         // ==========================================
         // 1ms周期

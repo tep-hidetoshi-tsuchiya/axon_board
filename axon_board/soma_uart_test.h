@@ -41,6 +41,13 @@ extern volatile uint8_t debug_last_byte;         // 最後に受信したバイ�
 extern volatile uint8_t debug_rx_index;          // 現在のrx_index
 extern volatile uint8_t debug_byte1;             // 2バイト目の値（0x20のはず）
 extern volatile uint32_t debug_byte1_ng_count;   // 2バイト目が0x20でない回数
+extern volatile uint32_t debug_isr_call_count;   // ISR呼び出し回数（isr.c内で定義）
+extern volatile uint32_t debug_iidx_value;       // 最後のiidx値（isr.c内で定義）
+extern volatile uint32_t debug_fifo_empty_count; // FIFO空判定回数
+extern volatile uint32_t debug_uart_stat_value;  // 最後のUART STAT値
+extern volatile uint32_t debug_rxdata_raw_value; // 最後のRXDATA生値
+extern volatile uint32_t debug_overrun_count;    // RXオーバーラン検出回数
+extern volatile uint32_t debug_framing_error_count; // フレーミングエラー検出回数
 
 // ISR→メイン受け渡しバッファ（ダブルバッファリング用）
 extern uint8_t rx_complete_frame[AXON_FRAME_SIZE];

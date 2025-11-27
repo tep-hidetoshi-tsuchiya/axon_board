@@ -242,6 +242,7 @@ static void _msp_peripheral_uart_init(void) {
     
     // FIFO enable
     DL_UART_enableFIFOs(uart0);
+    // RX FIFO Threshold = 1エントリ（1バイト受信で即座に割り込み）
     DL_UART_setRXFIFOThreshold(uart0, DL_UART_RX_FIFO_LEVEL_ONE_ENTRY);
     DL_UART_setTXFIFOThreshold(uart0, DL_UART_TX_FIFO_LEVEL_EMPTY);
     

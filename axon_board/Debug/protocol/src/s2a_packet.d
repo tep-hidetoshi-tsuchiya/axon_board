@@ -89,7 +89,7 @@ protocol/src/s2a_packet.o: ../protocol/src/s2a_packet.c \
  ../peripheral/dipsw_utils.h \
  ../peripheral/peripheral_typedef.h \
  ../peripheral/hw_ver_utils.h \
- ../event.h ../driver/systick.h \
+ ../driver/systick.h ../event.h \
  ../axon_status.h \
  ../soma_axon_comm_test.h
 ../protocol/src/s2a_packet.h:
@@ -181,7 +181,7 @@ C:/ti/mspm0_sdk_2_06_00_05/source/ti/driverlib/m0p/dl_systick.h:
 ../peripheral/dipsw_utils.h:
 ../peripheral/peripheral_typedef.h:
 ../peripheral/hw_ver_utils.h:
-../event.h:
 ../driver/systick.h:
+../event.h:
 ../axon_status.h:
 ../soma_axon_comm_test.h:

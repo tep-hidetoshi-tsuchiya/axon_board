@@ -9,6 +9,7 @@
 #include "../../peripheral/msp_peripheral_config.h"  // GPIO pin definitions
 #include "../../peripheral/dipsw_utils.h"
 #include "../../peripheral/hw_ver_utils.h"
+#include "../../driver/systick.h"  // systick timer
 #include "../../event.h"
 #include "../../axon_status.h"  // AXON status structure and functions
 // #include "../../driver/utils/tiny_aes.h"  // Software AES (MSPM0 DECRYPT bug workaround) - NOT NEEDED for AXON
@@ -253,6 +254,20 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
 {
     debug_chkirq_call_count++;
     
+    // 時刻取得
+    systick_t current_ms = get_systick_count_ms();
+    uint32_t total_sec = current_ms / 1000;
+    uint32_t hours = (total_sec / 3600) % 24;
+    uint32_t minutes = (total_sec / 60) % 60;
+    uint32_t seconds = total_sec % 60;
+    uint32_t ms = current_ms % 1000;
+    
+    NVIC_DisableIRQ(UART0_INT_IRQn);
+    printf("[%02lu:%02lu:%02lu.%03lu][CHKIRQ_HANDLER] Called (count=%lu)\n",
+           (unsigned long)hours, (unsigned long)minutes, (unsigned long)seconds, (unsigned long)ms,
+           (unsigned long)debug_chkirq_call_count);
+    NVIC_EnableIRQ(UART0_INT_IRQn);
+    
     // テストモード: コマンド受信記録
     axon_test_record_command(0x49);
     
@@ -260,6 +275,12 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
     DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_0 | DL_GPIO_PIN_1 | DL_GPIO_PIN_2);
     
     if (encrypted_frame == NULL) {
+        systick_t t = get_systick_count_ms();
+        uint32_t s = t / 1000;
+        NVIC_DisableIRQ(UART0_INT_IRQn);
+        printf("[%02lu:%02lu:%02lu.%03lu][CHKIRQ_HANDLER] ERROR: NULL frame\n",
+               (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000));
+        NVIC_EnableIRQ(UART0_INT_IRQn);
         // NULL: indicate error via LEDs and return error (avoid infinite halt)
         DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_0 | DL_GPIO_PIN_2);
         return false;
@@ -267,6 +288,12 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
 
     // 1. Header確認
     if (encrypted_frame[0] != 0x14) {
+        systick_t t = get_systick_count_ms();
+        uint32_t s = t / 1000;
+        NVIC_DisableIRQ(UART0_INT_IRQn);
+        printf("[%02lu:%02lu:%02lu.%03lu][CHKIRQ_HANDLER] ERROR: Invalid header 0x%02X\n",
+               (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000), encrypted_frame[0]);
+        NVIC_EnableIRQ(UART0_INT_IRQn);
         debug_header_ng_count++;
         clear_irq_signal();  // IRQクリア（エラー時）
         return false;
@@ -274,6 +301,12 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
     
     // 2. LEN確認
     if (encrypted_frame[1] != 0x20) {
+        systick_t t = get_systick_count_ms();
+        uint32_t s = t / 1000;
+        NVIC_DisableIRQ(UART0_INT_IRQn);
+        printf("[%02lu:%02lu:%02lu.%03lu][CHKIRQ_HANDLER] ERROR: Invalid length 0x%02X\n",
+               (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000), encrypted_frame[1]);
+        NVIC_EnableIRQ(UART0_INT_IRQn);
         debug_len_ng_count++;
         clear_irq_signal();  // IRQクリア（エラー時）
         return false;
@@ -286,6 +319,12 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
     debug_crc_calc = crc_calc;
     
     if (crc_recv != crc_calc) {
+        systick_t t = get_systick_count_ms();
+        uint32_t s = t / 1000;
+        NVIC_DisableIRQ(UART0_INT_IRQn);
+        printf("[%02lu:%02lu:%02lu.%03lu][CHKIRQ_HANDLER] ERROR: CRC mismatch recv=0x%04X calc=0x%04X\n",
+               (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000), crc_recv, crc_calc);
+        NVIC_EnableIRQ(UART0_INT_IRQn);
         debug_crc_ng_count++;
         axon_test_record_crc_error();  // テストモード: CRCエラー記録
         clear_irq_signal();  // IRQクリア（CRCエラー時）
@@ -299,12 +338,25 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
     CHKIRQ_PLAIN32* chkirq_plain = (CHKIRQ_PLAIN32*)decrypted_data;
     debug_decrypted_id = chkirq_plain->id;
     if (chkirq_plain->id != 0x49) {
+        systick_t t = get_systick_count_ms();
+        uint32_t s = t / 1000;
+        NVIC_DisableIRQ(UART0_INT_IRQn);
+        printf("[%02lu:%02lu:%02lu.%03lu][CHKIRQ_HANDLER] ERROR: Invalid command ID 0x%02X\n",
+               (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000), chkirq_plain->id);
+        NVIC_EnableIRQ(UART0_INT_IRQn);
         // コマンドID不一致: ログカウンタを増やして終了（LED点滅はログ化）
         debug_cmd_ng_count++;
         debug_led_event_count++;
         clear_irq_signal();  // IRQクリア（コマンドIDエラー時）
         return false;
     }
+    
+    systick_t t = get_systick_count_ms();
+    uint32_t s = t / 1000;
+    NVIC_DisableIRQ(UART0_INT_IRQn);
+    printf("[%02lu:%02lu:%02lu.%03lu][CHKIRQ_HANDLER] Validation passed, preparing ATIRQ response\n",
+           (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000));
+    NVIC_EnableIRQ(UART0_INT_IRQn);
 
     // CMD ID検証OK: 黄色LED短め点滅
     // CMD ID検証OK: ログ化（黄色LED短め点滅をログで代替）
