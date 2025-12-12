@@ -369,26 +369,65 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
     // ID: 0x6A (ATIRQ識別子)
     atirq_plain.id = 0x6A;
     
-    // MD (モード通知): bit7=リセット, bit4=コマンド受信トグル, bit1/0=ボタン
+    // MD (モード通知): Table 4-10準拠
     uint8_t md = 0x00;
+    
+    // bit7: AXON基板リセットフラグ (0=通常, 1=リセット状態)
+    // TODO: リセット検出機能実装時に有効化
+    // if (g_axon_status_shared.reset_flag) {
+    //     md |= (1 << 7);
+    // }
+    
+    // bit6-5: RFU (0固定)
+    
+    // bit4: コマンド受信状況（SOMAからのコマンド受信毎にトグル）
     g_cmd_recv_toggle ^= 1;  // トグル反転
     if (g_cmd_recv_toggle) {
-        md |= (1 << 4);  // bit4: コマンド受信トグル
+        md |= (1 << 4);
     }
+    
+    // bit3: 面番号設定中 (7セグLED点滅中)
+    // TODO: 面番号設定モード実装時に有効化
+    // if (g_axon_status_shared.setting_face) {
+    //     md |= (1 << 3);
+    // }
+    
+    // bit2: 金額設定中 (7セグLED点滅中)
+    // TODO: 金額設定モード実装時に有効化
+    // if (g_axon_status_shared.setting_cash) {
+    //     md |= (1 << 2);
+    // }
+    
+    // bit1: LEFT（金額枚数）ボタン押下状態 (0=通常, 1=押下中)
+    if (g_button_1_event.pressed) {
+        md |= (1 << 1);
+    }
+    
+    // bit0: RIGHT（面）ボタン押下状態 (0=通常, 1=押下中)
+    if (g_button_2_event.pressed) {
+        md |= (1 << 0);
+    }
+    
     atirq_plain.md = md;
     
     // FACE_N: 設定面番号（下位4bitのみ使用、上位4bitはRFU）
     // 7セグLED右側の値を面番号として使用（0-9）
     atirq_plain.face_n = g_right_amount & 0x0F;
     
-    // CASH_VLU: 設定金額（100円単位）
+    // CASH_VLU: 設定金額（100円単位、リトルエンディアン）
     // 7セグLED左側の値をそのまま100円単位として送信
     // 例: g_left_amount=1 → 0x0001 (100円), g_left_amount=100 → 0x0064 (10,000円)
     atirq_plain.cash_vlu = (uint16_t)g_left_amount;
     
-    // STATUS: 1バイト (bit0=ROT_DET, bit1=BLK_ON, bit2=COIN_DET, bit3=ESCRW_DET,
-    //                  bit4=DOOR_OPEN, bit5=SOLD_OUT, bit6=ERROR_STATE, bit7=MAINT_MODE)
-    // 実際の状態ビットを反映
+    // STATUS: 16bitステータスフィールド（Table 4-14準拠）
+    //   bit0: FACE有効無効 (0=無効, 1=有効)
+    //   bit1: 売り切れ検知 (0=販売可能, 1=売り切れ)
+    //   bit2: 電子マネーソレノイド (0=回転不可, 1=回転OK)
+    //   bit3: 光センサー/現金用 Latch式 (0=現金投入中, 1=現金なし)
+    //   bit4: 返却ボタン押下 (0=通常, 1=押下)
+    //   bit5: 現金ブロック (0=通常, 1=ブロック)
+    //   bit6: ドア開閉 (0=CLOSE, 1=OPEN)
+    //   bit7-15: RFU
     atirq_plain.status = axon_status_compose_bits();
     
     // MSN: AXON基板シリアル番号（6バイト）
@@ -397,7 +436,13 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
     // AFW_VER: FWバージョン（bit7-4=Major, bit3-0=Minor）
     atirq_plain.afw_ver = axon_fw_version;  // 0x10 = Version 1.0
     
-    // CHK_LED: LED状態（g_axon_status_sharedから取得）
+    // CHK_LED: LED状態（Table 4-13準拠）
+    //   bit0: R (0=消灯, 1=点灯)
+    //   bit1: G (0=消灯, 1=点灯)
+    //   bit2: B (0=消灯, 1=点灯)
+    //   bit3: RFU
+    //   bit[6:4]: 動作モード (0=点灯, 1=点滅1秒, 2=点滅2秒, 3=点滅0.5秒, 4-7=RFU)
+    //   bit7: RFU
     atirq_plain.chk_led = g_axon_status_shared.led_pattern;
     
     // CHK_TOUT: タイムアウト設定 (bit[7:4]=RFU, bit[3:0]=タイムアウト値)
@@ -438,7 +483,7 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
 
     // 7. 暗号化パケット構築
     uint8_t encrypted_packet[36];
-    encrypted_packet[0] = 0x10;  // AXON→SOMAのヘッダー（仕様準拠）
+    encrypted_packet[0] = 0x14;  // Header（Table 4-10準拠）
     encrypted_packet[1] = 0x20;
 
     memcpy((void*)debug_atirq_plain, &atirq_plain, 32);
@@ -786,14 +831,23 @@ bool axon_handle_setaxon(const uint8_t* encrypted_frame)
     
     // SET_FACE_N (設定面番号) → 7セグLED右側に表示
     // 0-9すべて有効（0=無効化状態も表示）
-    g_right_amount = setaxon->set_face_n & 0x0F;
+    g_right_amount = setaxon->set_face_n;
     
     // SET_CASH_VLU (設定金額) → 7セグLED左側に表示
-    // 金額は100円単位（0=0円, 1=100円, ..., 9=900円）
-    // uint16_tだが、表示は0-9の範囲のみ使用
-    g_left_amount = (uint8_t)(setaxon->set_cash_vlu & 0x0F);
+    // 金額は100円単位（0-99の範囲）
+    // set_cash_vlu: 0-99 → 金額: 0-9900円
+    // 例: set_cash_vlu=5 → 500円 → 左7セグ=5
+    // 例: set_cash_vlu=15 → 1500円 → 左7セグ=15（表示不可のため15に制限）
+    uint8_t cash_value = setaxon->set_cash_vlu;
+    if (cash_value > 99) cash_value = 99;  // 範囲外は99に制限
     
-    // 7セグLED更新は不要（メインループで自動更新される）
+    // 左側7セグ: 百の位（0-9）
+    // set_cash_vluの値をそのまま表示（1桁目は百円単位）
+    g_left_amount = cash_value;
+    
+    // 7セグLED即座に更新
+    extern void update_segment_leds(const uint8_t amount1, const uint8_t amount2);
+    update_segment_leds(g_left_amount, g_right_amount);
     
     // 共有ステータスに設定値を反映
     g_axon_status_shared.face_number = g_right_amount;
@@ -896,29 +950,22 @@ bool axon_handle_setokey(const uint8_t* frame)
         return false;
     }
 
-    // 1. Header確認
-    if (frame[0] != 0x11) {
+    // 1. Header確認（仕様書Table 4-20: HD=0x15）
+    if (frame[0] != 0x15) {
         send_nack_frame(0x02);  // データ内容エラー
         clear_irq_signal();  // IRQクリア（NACK送信後）
         return false;
     }
     
-    // 2. LEN確認
-    if (frame[1] != 0x12) {
+    // 2. LEN確認（仕様書Table 4-20: LEN=0x10=16バイト）
+    if (frame[1] != 0x10) {
         send_nack_frame(0x03);  // 長さエラー
         clear_irq_signal();  // IRQクリア（NACK送信後）
         return false;
     }
 
-    // 3. CRC16チェック（リトルエンディアン形式で読み取り）
-    uint16_t crc_recv = frame[18] | (frame[19] << 8);
-    uint16_t crc_calc = crc16_tep(frame, 18);
-    
-    if (crc_recv != crc_calc) {
-        send_nack_frame(0x04);  // CRC16エラー
-        clear_irq_signal();  // IRQクリア（NACK送信後）
-        return false;
-    }
+    // 3. CRC16チェックなし（仕様書Table 4-20: CRC16フィールドなし）
+    // 総フレーム長 = Header(1) + LEN(1) + OKEY(16) = 18バイト
 
     // 4. 運用鍵データ取得
     const uint8_t* key_data = &frame[2];
@@ -974,7 +1021,7 @@ bool axon_handle_afwup(const uint8_t* encrypted_frame)
     AFWUP_PLAIN32* afwup = (AFWUP_PLAIN32*)plain_data;
     
     // 5. コマンドID確認
-    if (afwup->id != 0x18) {
+    if (afwup->id != 0x4B) {
         send_nack_frame(0x00);  // 未確認コマンド
         clear_irq_signal();  // IRQクリア（NACK送信後）
         return false;
@@ -989,6 +1036,76 @@ bool axon_handle_afwup(const uint8_t* encrypted_frame)
     
     // 7. ACK応答送信
     return send_ack_frame();
+}
+
+/**
+ * @brief AXONRBT受信時の処理（AXON側）
+ * @details SOMAからAXONRBT（再起動要求）コマンドを受信し、ACK/NACK応答を返す
+ * @param encrypted_frame 受信したフレーム（36バイト: Header[1] + LEN[1] + Data[32] + CRC[2]）
+ * @return true: 成功, false: 失敗
+ */
+bool axon_handle_axonrbt(const uint8_t* encrypted_frame)
+{
+    // テストモード: コマンド受信記録
+    axon_test_record_command(0x7F);
+    
+    if (encrypted_frame == NULL) {
+        return false;
+    }
+
+    // 1. Header確認（仕様書Table 4-40: HD=0x14）
+    if (encrypted_frame[0] != 0x14) {
+        send_nack_frame(0x02);  // データ内容エラー
+        clear_irq_signal();  // IRQクリア（NACK送信後）
+        return false;
+    }
+    
+    // 2. LEN確認（仕様書Table 4-40: LEN=0x20=32バイト）
+    if (encrypted_frame[1] != 0x20) {
+        send_nack_frame(0x03);  // 長さエラー
+        clear_irq_signal();  // IRQクリア（NACK送信後）
+        return false;
+    }
+
+    // 3. CRC16チェック（リトルエンディアン形式で読み取り）
+    uint16_t crc_recv = encrypted_frame[34] | (encrypted_frame[35] << 8);
+    uint16_t crc_calc = crc16_tep(encrypted_frame, 34);
+    
+    if (crc_recv != crc_calc) {
+        send_nack_frame(0x04);  // CRC16エラー
+        clear_irq_signal();  // IRQクリア（NACK送信後）
+        return false;
+    }
+
+    // 4. 平文データ取得
+    uint8_t* plain_data = (uint8_t*)&encrypted_frame[2];
+    AXONRBT_PLAIN32* axonrbt = (AXONRBT_PLAIN32*)plain_data;
+    
+    // 5. コマンドID確認（仕様書Table 4-40: ID=0x7F）
+    if (axonrbt->id != 0x7F) {
+        send_nack_frame(0x00);  // 未確認コマンド
+        clear_irq_signal();  // IRQクリア（NACK送信後）
+        return false;
+    }
+
+    // 6. ACK応答送信
+    bool ack_result = send_ack_frame();
+    
+    // 7. ACK送信成功後、IRQ信号をHigh(非アクティブ)にクリア
+    if (ack_result) {
+        clear_irq_signal();
+    }
+    
+    // 8. 再起動処理（仕様書: 10秒後に再起動）
+    if (ack_result) {
+        printf("[AXONRBT] System reboot requested. Rebooting in 10 seconds...\n");
+        // 注意: 実際の再起動はNVIC_SystemReset()を使用
+        // TODO: 10秒待機後に再起動を実装
+        // delay_ms(10000);
+        // NVIC_SystemReset();
+    }
+    
+    return ack_result;
 }
 
 /**

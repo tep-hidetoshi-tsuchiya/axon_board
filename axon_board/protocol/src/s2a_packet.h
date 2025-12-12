@@ -131,13 +131,13 @@ typedef struct __attribute__((packed)) {
 } SETAXON_PLAIN32;
 _Static_assert(sizeof(SETAXON_PLAIN32) == 32, "SETAXON_PLAIN32 size");
 
-// AFWUP - AXON board firmware update request (HD:0x14, ID:0x18)
+// AFWUP - AXON board firmware update request (HD:0x14, ID:0x4B)
 // AXON基板FWアップデート要求コマンド
 // SOMA-AXON specification
 typedef struct __AXON_FIRM_UPDATE_REQ_PACKET {
     uint8_t  header;           // 0x14
     uint8_t  len;              // 0x20
-    uint8_t  id;               // 0x18
+    uint8_t  id;               // 0x4B
     uint8_t  rfu[25];
     uint16_t dic;
     uint16_t auth_code;
@@ -147,7 +147,7 @@ typedef struct __AXON_FIRM_UPDATE_REQ_PACKET {
 
 // AFWUP平文32バイト（暗号化前）
 typedef struct __AFWUP_PLAIN32 {
-    uint8_t  id;               // 0x18
+    uint8_t  id;               // 0x4B
     uint8_t  rfu[25];          // RFU
     uint16_t dic;
     uint16_t auth_code;
@@ -155,14 +155,23 @@ typedef struct __AFWUP_PLAIN32 {
 } __PACKED AFWUP_PLAIN32;
 _Static_assert(sizeof(AFWUP_PLAIN32) == 32, "AFWUP_PLAIN32 size");
 
-// SETOKEY - Operational key setting command (HD:0x11, LEN:0x12)
-// 運用鍵設定コマンド
+// AXONRBT平文32バイト（暗号化前）
+typedef struct __attribute__((packed)) {
+    uint8_t  id;               // 0x7F
+    uint8_t  rfu[25];          // RFU
+    uint16_t dic;
+    uint16_t auth_code;
+    uint16_t rnd;
+} AXONRBT_PLAIN32;
+_Static_assert(sizeof(AXONRBT_PLAIN32) == 32, "AXONRBT_PLAIN32 size");
+
+// SETOKEY - Operational key setting command (HD:0x15, LEN:0x10)
+// 運用鍵設定コマンド（仕様書Table 4-20準拠: CRC16なし）
 // SOMA-AXON specification
 typedef struct __SET_OP_KEY_PACKET {
-    uint8_t  header;           // 0x11
-    uint8_t  len;              // 0x12 (18 bytes)
+    uint8_t  header;           // 0x15
+    uint8_t  len;              // 0x10 (16 bytes)
     uint8_t  key[16];          // 運用鍵16バイト
-    uint16_t crc16;
 } __PACKED SET_OP_KEY_PACKET;
 
 // ============================================================
@@ -397,6 +406,14 @@ bool axon_handle_setokey(const uint8_t* frame);
  * @return true: 成功, false: 失敗
  */
 bool axon_handle_afwup(const uint8_t* encrypted_frame);
+
+/**
+ * @brief AXONRBT受信時の処理（AXON側）
+ * @details SOMAからAXONRBT（再起動要求）を受信し、ACK/NACK応答を返す
+ * @param encrypted_frame 受信したフレーム（36バイト: Header[1] + LEN[1] + Data[32] + CRC[2]）
+ * @return true: 成功, false: 失敗
+ */
+bool axon_handle_axonrbt(const uint8_t* encrypted_frame);
 
 /**
  * @brief CODEPKT受信時の処理（AXON側）

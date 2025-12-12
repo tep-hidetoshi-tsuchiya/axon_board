@@ -75,8 +75,8 @@ static inline uint16_t axon_status_compose_bits(void) {
         status |= STATUS_EMONEY_SOL_BIT;
     }
 
-    // bit3: 光センサー（回転検出）
-    if (s->dial_rotated) {
+    // bit3: 光センサー(現金検知) ※Latch式: 0=現金投入中, 1=現金なし
+    if (!s->coin_detected) {
         status |= STATUS_LIGHT_SENSOR_BIT;
     }
 

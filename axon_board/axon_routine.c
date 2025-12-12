@@ -48,6 +48,9 @@ button_event_t g_rotary_event;
 
 button_event_t g_escrow_event;      // エスクロ検知
 button_event_t g_coindet_event;     // 現金検知
+
+// デバッグ: 起動5秒後にCOIN_DET疑似入力
+static uint8_t g_coin_test_triggered = 0;
 button_event_t g_connector_event;   // コネクタ検知(予備GPIO)
 button_event_t g_soldout_event;     // 売り切れ検知SW
 button_event_t g_door_event;        // ドア開閉検知
@@ -61,6 +64,9 @@ volatile axon_status_shared_t g_axon_status_shared = {0};
 // 7セグLED表示値（protocol/src/s2a_packet.cから参照）
 uint8_t g_left_amount = 0;
 uint8_t g_right_amount = 0;
+
+// AXON状態管理（protocol/src/s2a_packet.cから参照）
+axon_status_t g_axon_state = {0};
 
 static inline void _change_status(axon_status_t* axon, terminal_status_t new_status) {
     if (axon->status != new_status &&
@@ -162,6 +168,11 @@ static inline void _set_segment_leds(const uint8_t amount1, const uint8_t amount
     _set_segment_led(SEG2_PORT, SEG2_PINS_MASK, SEG2_BIT_OFFSET, amount2);
 }
 
+// 外部から呼び出せる7セグLED更新関数（s2a_packet.cから使用）
+void update_segment_leds(const uint8_t amount1, const uint8_t amount2) {
+    _set_segment_leds(amount1, amount2);
+}
+
 static inline bool _check_debounce_complete(button_event_t* event, uint32_t debounce_us) {
     if (event->pressed == 1U && event->last_state == 0U && event->debounce_us == 0U) {
         // Rising edge detected, start debounce
@@ -196,7 +207,6 @@ void axon_routine_main(void* args) {
 #ifdef AXON_BOARD
     systick_t         period        = 0;
     systick_t         notified_time = 0;
-    axon_status_t     axon_state    = {0};
     bool              changed       = false;
     uart_s2a_packet_t s2a_packet    = {0};
     uint8_t           notified_inc  = 0;
@@ -321,21 +331,33 @@ void axon_routine_main(void* args) {
     // 3. ソレノイドONコマンドを受信したら、ソレノイドをONにし、ハンドル回転検出待ちへ
     // 4. ハンドル回転を検出したら、ソレノイドをOFFにし、状態通知を行い、再びUARTでのコマンド受信待ちへ
     // 5. 一定時間コマンドを受信しなかった場合、IRQをたて、状態通知を行う
-    _change_status(&axon_state, STATE_NOTIFY);
+    _change_status(&g_axon_state, STATE_NOTIFY);
     DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, UART_IRQ_OUT_PIN);
 
-    _set_segment_leds(axon_state.left_amount, axon_state.right_amount);
+    _set_segment_leds(g_axon_state.left_amount, g_axon_state.right_amount);
 
     while (1) {
+        // デバッグ: 5秒毎にCOIN_DET疑似入力
+        {
+            static systick_t last_coin_test_time = 0;
+            systick_t current_time = get_systick_count_ms();
+            if (current_time - last_coin_test_time >= 5000) {
+                last_coin_test_time = current_time;
+                g_coindet_event.pressed = 1;
+                g_coindet_event.phase_time = current_time;
+                printf("[DEBUG] Simulated COIN_DET input at %lu ms\r\n", (unsigned long)current_time);
+            }
+        }
+        
         // check dial rotation
-        if (axon_state.status == STATE_SOL_ON) {
+        if (g_axon_state.status == STATE_SOL_ON) {
             bool dial_rotated = _check_debounce_complete(&g_rotary_event, SWITCH_DEBOUNCE_US);
             if (dial_rotated) {
-                axon_state.sol_state   = 0;
-                axon_state.dial_detect = 1;
-                axon_state.dial_state  = 1;
-                _change_status(&axon_state, STATE_DIAL_DETECT);
-                _set_solenoid_pins(axon_state.sol_state);
+                g_axon_state.sol_state   = 0;
+                g_axon_state.dial_detect = 1;
+                g_axon_state.dial_state  = 1;
+                _change_status(&g_axon_state, STATE_DIAL_DETECT);
+                _set_solenoid_pins(g_axon_state.sol_state);
                 changed = true;
             }
         } else {
@@ -346,11 +368,12 @@ void axon_routine_main(void* args) {
         // select segment LEDs
         if (g_button_1_event.pressed) {
             if (g_button_1_event.last_press_time_ms + BUTTON_INTERVAL_MS < get_systick_count_ms()) {
-                if (axon_state.left_amount < 9) {
-                    axon_state.left_amount++;
+                if (g_axon_state.left_amount < 9) {
+                    g_axon_state.left_amount++;
                 } else {
-                    axon_state.left_amount = 0;
+                    g_axon_state.left_amount = 0;
                 }
+                g_left_amount = g_axon_state.left_amount;  // グローバル変数も同期
                 g_button_1_event.pressed            = 0;
                 g_button_1_event.last_press_time_ms = get_systick_count_ms();
             }
@@ -358,11 +381,12 @@ void axon_routine_main(void* args) {
 
         if (g_button_2_event.pressed) {
             if (g_button_2_event.last_press_time_ms + BUTTON_INTERVAL_MS < get_systick_count_ms()) {
-                if (axon_state.right_amount < 9) {
-                    axon_state.right_amount++;
+                if (g_axon_state.right_amount < 9) {
+                    g_axon_state.right_amount++;
                 } else {
-                    axon_state.right_amount = 0;
+                    g_axon_state.right_amount = 0;
                 }
+                g_right_amount = g_axon_state.right_amount;  // グローバル変数も同期
                 g_button_2_event.pressed            = 0;
                 g_button_2_event.last_press_time_ms = get_systick_count_ms();
             }
@@ -372,30 +396,29 @@ void axon_routine_main(void* args) {
         //     // エスクロ検知時の処理
         //     if (g_escrow_event.last_press_time_ms + 10 < get_systick_count_ms()) {
         //         // エスクロ検知処理
-        //         axon_state.left_amount = 1;  // デバッグ用
-        //         axon_state.right_amount = 1; // デバッグ用
+        //         g_axon_state.left_amount = 1;  // デバッグ用
+        //         g_axon_state.right_amount = 1; // デバッグ用
         //     }
         //     g_escrow_event.pressed            = 0;
         //     g_escrow_event.last_press_time_ms = get_systick_count_ms();
         // }
 
-        // if (g_coindet_event.pressed) {
-        //     // 現金検知時の処理
-        //     if (g_coindet_event.last_press_time_ms + 10 < get_systick_count_ms()) {
-        //         // 現金検知処理
-        //         axon_state.left_amount = 3;  // デバッグ用
-        //         axon_state.right_amount = 3; // デバッグ用
-        //     }
-        //     g_coindet_event.pressed            = 0;
-        //     g_coindet_event.last_press_time_ms = get_systick_count_ms();
-        // }
+        if (g_coindet_event.pressed) {
+            // 現金検知時の処理: STATUS bit3をLatch、IRQ信号をSOMAに送信
+            axon_status_latch_coin();  // STATUS bit3=0 (現金投入中)に設定
+            
+            // IRQ信号をLow(アクティブ)に設定してSOMAに通知
+            DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);
+            
+            g_coindet_event.pressed = 0;
+        }
 
         // if (g_connector_event.pressed) {
         //     // コネクタ検知時の処理
         //     if (g_connector_event.last_press_time_ms + 10 < get_systick_count_ms()) {
         //         // コネクタ検知処理
-        //         axon_state.left_amount = 5;  // デバッグ用
-        //         axon_state.right_amount = 5; // デバッグ用
+        //         g_axon_state.left_amount = 5;  // デバッグ用
+        //         g_axon_state.right_amount = 5; // デバッグ用
         //     }
         //     g_connector_event.pressed            = 0;
         //     g_connector_event.last_press_time_ms = get_systick_count_ms();
@@ -405,8 +428,8 @@ void axon_routine_main(void* args) {
         //     // 売り切れ検知時の処理
         //     if (g_soldout_event.last_press_time_ms + 10 < get_systick_count_ms()) {
         //         // 売り切れ検知処理
-        //         axon_state.left_amount = 7;  // デバッグ用
-        //         axon_state.right_amount = 7; // デバッグ用
+        //         g_axon_state.left_amount = 7;  // デバッグ用
+        //         g_axon_state.right_amount = 7; // デバッグ用
         //     }
         //     g_soldout_event.pressed            = 0;
         //     g_soldout_event.last_press_time_ms = get_systick_count_ms();
@@ -416,14 +439,37 @@ void axon_routine_main(void* args) {
         //     // ドア開閉検知時の処理
         //     if (g_door_event.last_press_time_ms + 10 < get_systick_count_ms()) {
         //         // ドア開閉検知処理
-        //         axon_state.left_amount = 9;  // デバッグ用
-        //         axon_state.right_amount = 9; // デバッグ用
+        //         g_axon_state.left_amount = 9;  // デバッグ用
+        //         g_axon_state.right_amount = 9; // デバッグ用
         //     }
         //     g_door_event.pressed            = 0;
         //     g_door_event.last_press_time_ms = get_systick_count_ms();
         // }
 
-        _set_segment_leds(axon_state.left_amount, axon_state.right_amount);
+        // for debug CN3 ROT_DET(11pin) TEST
+        // if (g_rotary_event.pressed ){
+        //     // ダイヤル回転検知
+        //     if (g_rotary_event.last_press_time_ms + 10 < get_systick_count_ms()) {
+        //         // ダイヤル回転検知
+        //         g_axon_state.left_amount = 2;
+        //         g_axon_state.right_amount = 2;
+        //     }
+        //     g_rotary_event.pressed = 0;
+        //     g_rotary_event.last_press_time_ms = get_systick_count_ms();
+        // }
+
+
+        // 7セグLED更新: グローバル変数とローカル変数を同期
+        // SETAXONで更新された値を優先的に反映
+        if (g_left_amount != g_axon_state.left_amount) {
+            g_axon_state.left_amount = g_left_amount;
+        }
+        if (g_right_amount != g_axon_state.right_amount) {
+            g_axon_state.right_amount = g_right_amount;
+        }
+
+        // 7seg LED 更新
+        _set_segment_leds(g_axon_state.left_amount, g_axon_state.right_amount);
 
         // ==========================================
         // SOMA UARTテスト: フレームチェック
@@ -533,7 +579,7 @@ void axon_routine_main(void* args) {
                         handled = axon_handle_setaxon(rx_complete_frame);
                         if (handled) {
                             // 設定反映成功 - 状態更新
-                            _change_status(&axon_state, STATE_NORMAL);
+                            _change_status(&g_axon_state, STATE_NORMAL);
                             changed = true;
                         }
                         break;
@@ -542,8 +588,12 @@ void axon_routine_main(void* args) {
                         handled = axon_handle_nop(rx_complete_frame);
                         break;
                         
-                    case 0x18:  // AFWUP - FW更新要求
+                    case 0x4B:  // AFWUP - FW更新要求（仕様書Table 4-1）
                         handled = axon_handle_afwup(rx_complete_frame);
+                        break;
+                        
+                    case 0x7F:  // AXONRBT - 再起動要求（仕様書Table 4-1）
+                        handled = axon_handle_axonrbt(rx_complete_frame);
                         break;
                         
                     default:
@@ -568,8 +618,8 @@ void axon_routine_main(void* args) {
             uint8_t length = rx_variable_frame[1];
             bool handled = false;
             
-            if (header == 0x11 && length == 0x12 && rx_variable_length == 20) {
-                // 20バイトフレーム - SETOKEY（運用鍵設定）
+            if (header == 0x15 && length == 0x10 && rx_variable_length == 18) {
+                // 18バイトフレーム - SETOKEY（運用鍵設定、仕様書Table 4-20準拠）
                 handled = axon_handle_setokey(rx_variable_frame);
                 if (handled) {
                     // 運用鍵設定成功
@@ -618,14 +668,14 @@ void axon_routine_main(void* args) {
                     s2a_packet.data    = _generate_uart_terminal_status_data(
                         0,                          // amount (未使用)
                         0,                          // led_state (未使用)
-                        axon_state.sol_state,       // ソレノイド状態
-                        axon_state.dial_detect      // ハンドル回転検出
+                        g_axon_state.sol_state,       // ソレノイド状態
+                        g_axon_state.dial_detect      // ハンドル回転検出
                     );
 
                     // 応答を送信
                     status = send_uart_s2a_packet(&s2a_packet);
                     if (status == UART_PACKET_STATUS_SUCCESS) {
-                        _change_status(&axon_state, STATE_NORMAL);
+                        _change_status(&g_axon_state, STATE_NORMAL);
                         changed = false;
                         
                         // IRQ信号を下げる
@@ -641,38 +691,38 @@ void axon_routine_main(void* args) {
                     // 受信データをパース
                     _parse_uart_terminal_status_data(
                         s2a_packet.data,
-                        &axon_state.amount,
-                        &axon_state.led_state,
-                        &axon_state.sol_state,
-                        &axon_state.dial_state
+                        &g_axon_state.amount,
+                        &g_axon_state.led_state,
+                        &g_axon_state.sol_state,
+                        &g_axon_state.dial_state
                     );
 
                     // ACK応答パケットを構築
                     s2a_packet.header  = UART_S2A_HEADER;
                     s2a_packet.command = UART_CMD_SET_STATUS_RESP;
                     s2a_packet.data    = _generate_uart_terminal_status_data(
-                        axon_state.amount,
-                        axon_state.led_state,
-                        axon_state.sol_state,
-                        axon_state.dial_state
+                        g_axon_state.amount,
+                        g_axon_state.led_state,
+                        g_axon_state.sol_state,
+                        g_axon_state.dial_state
                     );
 
                     // ACK応答を送信
                     status = send_uart_s2a_packet(&s2a_packet);
                     if (status == UART_PACKET_STATUS_SUCCESS) {
                         // ハードウェア制御を更新
-                        _set_amount(axon_state.amount);
-                        _set_led_pins(axon_state.led_state);
-                        _set_solenoid_pins(axon_state.sol_state);
+                        _set_amount(g_axon_state.amount);
+                        _set_led_pins(g_axon_state.led_state);
+                        _set_solenoid_pins(g_axon_state.sol_state);
 
                         // 状態遷移の処理
-                        if (axon_state.sol_state) {
+                        if (g_axon_state.sol_state) {
                             // ソレノイドON時: ハンドル回転検出待ちへ
-                            _change_status(&axon_state, STATE_SOL_ON);
-                            axon_state.dial_detect = 0;
-                        } else if (axon_state.status != STATE_NOTIFY) {
+                            _change_status(&g_axon_state, STATE_SOL_ON);
+                            g_axon_state.dial_detect = 0;
+                        } else if (g_axon_state.status != STATE_NOTIFY) {
                             // ソレノイドOFF時: 通常状態へ
-                            _change_status(&axon_state, STATE_NORMAL);
+                            _change_status(&g_axon_state, STATE_NORMAL);
                         }
                         
                         changed = true;
@@ -702,7 +752,7 @@ void axon_routine_main(void* args) {
             changed = false;
 
             // uart irq enable
-            _change_status(&axon_state, STATE_NOTIFY);
+            _change_status(&g_axon_state, STATE_NOTIFY);
             DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, UART_IRQ_OUT_PIN);
         }
 #endif  // SOMA_BOARD
