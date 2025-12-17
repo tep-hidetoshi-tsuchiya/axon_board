@@ -4,25 +4,7 @@
 #include "ti_msp_dl_config.h"
 #define POWER_STARTUP_DELAY (16)
 
-#ifdef SOMA_BOARD
-/*
- * SPI clock
- * Source Clock(32MHz) / 1 = 32MHz
- */
-static const DL_SPI_ClockConfig g_FRAM_CLOCK_CONFIG = {
-    .clockSel    = DL_SPI_CLOCK_BUSCLK,             // 32MHz
-    .divideRatio = DL_SPI_CLOCK_DIVIDE_RATIO_1,     // 分周なし
-};
 
-static const DL_SPI_Config g_FRAM_SPI_CONFIG = {
-    .mode          = DL_SPI_MODE_CONTROLLER,
-    .frameFormat   = DL_SPI_FRAME_FORMAT_MOTO4_POL0_PHA0,
-    .parity        = DL_SPI_PARITY_NONE,
-    .dataSize      = DL_SPI_DATA_SIZE_8,
-    .bitOrder      = DL_SPI_BIT_ORDER_MSB_FIRST,
-    .chipSelectPin = DL_SPI_CHIP_SELECT_NONE,  // CS手動制御設定
-};
-#endif
 
 /*
  * UART clock
@@ -259,32 +241,7 @@ static void _msp_peripheral_uart_init(void) {
 }
 
 static void _msp_peripheral_spi_init(void) {
-#ifdef SOMA_BOARD
-
-    // SPI Interrupt Configuration
-    DL_SPI_setClockConfig(FRAM_SPI_INST, (DL_SPI_ClockConfig *) &g_FRAM_CLOCK_CONFIG);
-
-    DL_SPI_init(FRAM_SPI_INST, (DL_SPI_Config *) &g_FRAM_SPI_CONFIG);
-
-    /* Configure Controller mode */
-    /*
-     * Set the bit rate clock divider to generate the serial output clock
-     *     outputBitRate = (spiInputClock) / ((1 + SCR) * 2)
-     *     16000000 = (32000000)/((1 + 0) * 2)
-     */
-    DL_SPI_setBitRateSerialClockDivider(FRAM_SPI_INST, 0);      // 16MHz (32MHz / ((1 + 0) * 2) = 16MHz)
-    
-    /* 高速動作(16MHz)用: サンプリング遅延を設定 */
-    /* データサンプリングを2クロック遅延させる (FRAMのデータ受信遅延対応) */
-    DL_SPI_setDelayedSampling(FRAM_SPI_INST, 1);  // 1クロックサイクル遅延 (推奨値: 1-3)
-    
-    /* Set RX and TX FIFO threshold levels */
-    DL_SPI_setFIFOThreshold(FRAM_SPI_INST, DL_SPI_RX_FIFO_LEVEL_ONE_FRAME, DL_SPI_TX_FIFO_LEVEL_ONE_FRAME);
-    DL_SPI_enableInterrupt(FRAM_SPI_INST, (DL_SPI_INTERRUPT_RX));
-
-    /* Enable module */
-    DL_SPI_enable(FRAM_SPI_INST);
-#endif
+    // No SPI peripheral configuration needed for AXON board
 }
 
 // overwrite
@@ -325,7 +282,6 @@ void SYSCFG_DL_initPower(void) {
 #ifdef SOMA_BOARD
     DL_UART_reset(TG_UART_INST);
     DL_UART_reset(AXON_UART_INST);
-    DL_SPI_reset(FRAM_SPI_INST);
 #endif
 #ifdef AXON_BOARD
     // ★修正完了: TI標準UART0アドレス使用（MSPM0G3507データシートTable 3-1準拠）
@@ -345,7 +301,6 @@ void SYSCFG_DL_initPower(void) {
 #ifdef SOMA_BOARD
     DL_UART_enablePower(TG_UART_INST);
     DL_UART_enablePower(AXON_UART_INST);
-    DL_SPI_enablePower(FRAM_SPI_INST);
 #endif
 #ifdef AXON_BOARD
     // ★修正完了: TI標準UART0アドレス使用（MSPM0G3507データシートTable 3-1準拠）
@@ -423,16 +378,7 @@ void SYSCFG_DL_GPIO_init(void) {
     DL_GPIO_setUpperPinsPolarity(PUSH_SW_PORT, DL_GPIO_PIN_19_EDGE_RISE);
     DL_GPIO_enableInterrupt(PUSH_SW_PORT, PUSH_SW_PIN);
 
-    // FRAM
-    // CSは手動制御用にGPIOで設定
-    DL_GPIO_initDigitalOutputFeatures(FRAM_SPI_CS_IOMUX, DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
-                                      DL_GPIO_DRIVE_STRENGTH_LOW, DL_GPIO_HIZ_DISABLE);
-    DL_GPIO_enableOutput(FRAM_SPI_PORT, FRAM_SPI_CS_PIN);   // CSピンを出力に設定
-    DL_GPIO_setPins(FRAM_SPI_PORT, FRAM_SPI_CS_PIN);        // CS Highに設定（非選択状態）
 
-    DL_GPIO_initPeripheralOutputFunction(FRAM_SPI_SCLK_IOMUX, FRAM_SPI_SCLK_PF_FUNC);   // SCLK = SCK = POCI (コントローラ出力)
-    DL_GPIO_initPeripheralInputFunction(FRAM_SPI_SO_IOMUX, FRAM_SPI_SO_PF_FUNC);        // SO = MISO = POCI (コントローラ入力)
-    DL_GPIO_initPeripheralOutputFunction(FRAM_SPI_SI_IOMUX, FRAM_SPI_SI_PF_FUNC);       // SI = MOSI = POCI (コントローラ出力)
 
     // UART for TG
     DL_GPIO_initPeripheralOutputFunction(TG_UART_TX_IOMUX, TG_UART_TX_PF_FUNC);

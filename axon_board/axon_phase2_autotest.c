@@ -20,7 +20,6 @@
 
 #include "axon_phase2_autotest.h"
 #include "axon_phase2_verification.h"
-#include "peripheral/fram_memory_map.h"
 #include "peripheral/msp_peripheral_config.h"
 #include "axon_status.h"
 #include "ti_msp_dl_config.h"

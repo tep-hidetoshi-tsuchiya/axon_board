@@ -9,20 +9,32 @@
 #include "../../peripheral/msp_peripheral_config.h"  // GPIO pin definitions
 #include "../../peripheral/dipsw_utils.h"
 #include "../../peripheral/hw_ver_utils.h"
-#include "../../driver/systick.h"  // systick timer
+#include "../../driver/systick.h"  // systick timer - must be before led_utils.h
+#include "../../peripheral/led_utils.h"  // LED PWM control functions
 #include "../../event.h"
 #include "../../axon_status.h"  // AXON status structure and functions
+#include "../../debug_log.h"  // ノンブロッキングログ
 // #include "../../driver/utils/tiny_aes.h"  // Software AES (MSPM0 DECRYPT bug workaround) - NOT NEEDED for AXON
 #include "../../soma_axon_comm_test.h"  // Test mode functions
 // External UART send function (implemented in soma_uart_test.c)
 extern bool uart_send_packet(const uint8_t* data, size_t len);
+extern bool uart_send_packet_fast(const uint8_t* data, size_t len);  // 高速版（ACK/ATIRQ用）
 
 // グローバル変数: コマンド受信トグルビット
-static uint8_t g_cmd_recv_toggle = 0;
+static volatile uint8_t g_cmd_recv_toggle = 0;
 
 // 外部参照: axon_routine.cで定義されたグローバル変数
-extern uint8_t g_left_amount;
-extern uint8_t g_right_amount;
+// ★CRITICAL: volatile必須（複数の実行コンテキスト間で共有）
+extern volatile uint8_t g_left_amount;
+extern volatile uint8_t g_right_amount;
+extern volatile uint8_t g_pending_left_amount;   // ATIRQ送信用（ボタン押下時の+1値を保持）
+extern volatile uint8_t g_pending_right_amount;  // ATIRQ送信用（ボタン押下時の+1値を保持）
+extern volatile uint8_t g_pending_left_updated;  // pending値更新フラグ
+extern volatile uint8_t g_pending_right_updated; // pending値更新フラグ
+extern volatile uint8_t g_retry_pending;         // 重複検出リトライ中フラグ
+
+// 重複検出時のIRQ再送要求フラグ（メインループで処理）
+volatile uint8_t g_retry_irq_request = 0;
 #endif
 
 #ifdef SOMA_BOARD
@@ -158,7 +170,13 @@ static bool send_nack_frame(uint8_t err_code);
 static void clear_irq_signal(void);  // IRQ信号クリア（High設定）
 
 // AXON board information (should be stored in FRAM/Flash in production)
-static const uint8_t axon_serial_number[6] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05};
+// シリアル番号フォーマット: 例）25L6200001 ⇒ 0x19_0C_3E_00_03E9
+//   Byte[0]: 製造年（25 → 0x19）
+//   Byte[1]: 製造月（L=12月 → 0x0C）
+//   Byte[2]: 製品番号（62 → 0x3E）
+//   Byte[3]: オプション（0 → 0x00）
+//   Byte[4-5]: ロット番号（1001 → 0x03E9、ビッグエンディアン）
+static const uint8_t axon_serial_number[6] = {0x19, 0x0C, 0x3E, 0x00, 0x03, 0xE9};  // 25L6201001
 static const uint8_t axon_fw_version = 0x10;  // FW Version 1.0 (bit[7:4]=Major, bit[3:0]=Minor)
 static const uint8_t axon_fw_min_version = 0x10;  // 最小要求FWバージョン
 
@@ -196,11 +214,14 @@ volatile uint8_t debug_atirq_encrypted[32] = {0};
 
 volatile uint32_t debug_led_event_count = 0; // LEDイベントをログ化するためのカウンタ
 
-// AES-128-CBC encryption key and IV (SOMA側と一致)
-static const uint8_t aes_key[16] = {
+// AES-256-ECB encryption key (SOMA側と一致)
+static const uint8_t aes_key[32] = {
     0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
-    0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE
+    0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE,
+    0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10,
+    0xEF, 0xCD, 0xAB, 0x89, 0x67, 0x45, 0x23, 0x01
 };
+// 注: ECBモードではIVは使用しないが、将来の拡張のため定義を残す
 static const uint8_t aes_iv[16] = {
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
     0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
@@ -254,6 +275,8 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
 {
     debug_chkirq_call_count++;
     
+    // デバッグログ簡略化（UART通信安定化）
+    #if 0
     // 時刻取得
     systick_t current_ms = get_systick_count_ms();
     uint32_t total_sec = current_ms / 1000;
@@ -267,20 +290,23 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
            (unsigned long)hours, (unsigned long)minutes, (unsigned long)seconds, (unsigned long)ms,
            (unsigned long)debug_chkirq_call_count);
     NVIC_EnableIRQ(UART0_INT_IRQn);
+    #endif
     
     // テストモード: コマンド受信記録
-    axon_test_record_command(0x49);
+    // axon_test_record_command(0x49);
     
     // 全LED消灯
     DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_0 | DL_GPIO_PIN_1 | DL_GPIO_PIN_2);
     
     if (encrypted_frame == NULL) {
+        #if 0
         systick_t t = get_systick_count_ms();
         uint32_t s = t / 1000;
         NVIC_DisableIRQ(UART0_INT_IRQn);
         printf("[%02lu:%02lu:%02lu.%03lu][CHKIRQ_HANDLER] ERROR: NULL frame\n",
                (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000));
         NVIC_EnableIRQ(UART0_INT_IRQn);
+        #endif
         // NULL: indicate error via LEDs and return error (avoid infinite halt)
         DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_0 | DL_GPIO_PIN_2);
         return false;
@@ -295,7 +321,6 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
                (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000), encrypted_frame[0]);
         NVIC_EnableIRQ(UART0_INT_IRQn);
         debug_header_ng_count++;
-        clear_irq_signal();  // IRQクリア（エラー時）
         return false;
     }
     
@@ -308,7 +333,6 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
                (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000), encrypted_frame[1]);
         NVIC_EnableIRQ(UART0_INT_IRQn);
         debug_len_ng_count++;
-        clear_irq_signal();  // IRQクリア（エラー時）
         return false;
     }
 
@@ -327,7 +351,6 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
         NVIC_EnableIRQ(UART0_INT_IRQn);
         debug_crc_ng_count++;
         axon_test_record_crc_error();  // テストモード: CRCエラー記録
-        clear_irq_signal();  // IRQクリア（CRCエラー時）
         return false;
     }
 
@@ -347,7 +370,6 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
         // コマンドID不一致: ログカウンタを増やして終了（LED点滅はログ化）
         debug_cmd_ng_count++;
         debug_led_event_count++;
-        clear_irq_signal();  // IRQクリア（コマンドIDエラー時）
         return false;
     }
     
@@ -369,41 +391,43 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
     // ID: 0x6A (ATIRQ識別子)
     atirq_plain.id = 0x6A;
     
-    // MD (モード通知): Table 4-10準拠
+    // MD (モード通知): SOMA側仕様準拠 Table 4-16
     uint8_t md = 0x00;
     
     // bit7: AXON基板リセットフラグ (0=通常, 1=リセット状態)
-    // TODO: リセット検出機能実装時に有効化
-    // if (g_axon_status_shared.reset_flag) {
-    //     md |= (1 << 7);
-    // }
+    if (g_axon_status_shared.reset_flag) {
+        md |= (1 << 7);
+    }
     
     // bit6-5: RFU (0固定)
     
-    // bit4: コマンド受信状況（SOMAからのコマンド受信毎にトグル）
-    g_cmd_recv_toggle ^= 1;  // トグル反転
+    // bit4: コマンド受信トグル（SETAXONコマンド受信毎にトグル）
+    // 注: CHKIRQでは変更しない（SETAXONハンドラでトグル）
+    extern volatile uint8_t g_cmd_recv_toggle;
     if (g_cmd_recv_toggle) {
         md |= (1 << 4);
     }
     
     // bit3: 面番号設定中 (7セグLED点滅中)
-    // TODO: 面番号設定モード実装時に有効化
-    // if (g_axon_status_shared.setting_face) {
-    //     md |= (1 << 3);
-    // }
+    // ボタン押下後、SETAXONで確定するまで設定中状態
+    if (g_pending_right_updated) {
+        md |= (1 << 3);
+    }
     
     // bit2: 金額設定中 (7セグLED点滅中)
-    // TODO: 金額設定モード実装時に有効化
-    // if (g_axon_status_shared.setting_cash) {
-    //     md |= (1 << 2);
-    // }
+    // ボタン押下後、SETAXONで確定するまで設定中状態
+    if (g_pending_left_updated) {
+        md |= (1 << 2);
+    }
     
     // bit1: LEFT（金額枚数）ボタン押下状態 (0=通常, 1=押下中)
+    extern button_event_t g_button_1_event;
     if (g_button_1_event.pressed) {
         md |= (1 << 1);
     }
     
     // bit0: RIGHT（面）ボタン押下状態 (0=通常, 1=押下中)
+    extern button_event_t g_button_2_event;
     if (g_button_2_event.pressed) {
         md |= (1 << 0);
     }
@@ -411,13 +435,26 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
     atirq_plain.md = md;
     
     // FACE_N: 設定面番号（下位4bitのみ使用、上位4bitはRFU）
-    // 7セグLED右側の値を面番号として使用（0-9）
-    atirq_plain.face_n = g_right_amount & 0x0F;
+    // ★仕様書準拠: ボタン押下時はpending値を送信
+    //   - g_pending_right_updated=1: g_pending_right_amount (ボタン押下時の+1値)
+    //   - g_pending_right_updated=0: g_right_amount (現在の表示値)
+    uint8_t face_to_send = g_pending_right_updated ? g_pending_right_amount : g_right_amount;
+    atirq_plain.face_n = face_to_send & 0x0F;
+    
+    // デバッグ: ATIRQ送信時の状態をLEDで表示
+    if (g_pending_right_updated) {
+        // 黄色LED短時間点灯（pending値送信中）
+        DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_0 | DL_GPIO_PIN_1);  // R+G = 黄色
+        delay_cycles(CPUCLK_FREQ / 200);  // 5ms
+        DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_0 | DL_GPIO_PIN_1);
+    }
     
     // CASH_VLU: 設定金額（100円単位、リトルエンディアン）
-    // 7セグLED左側の値をそのまま100円単位として送信
-    // 例: g_left_amount=1 → 0x0001 (100円), g_left_amount=100 → 0x0064 (10,000円)
-    atirq_plain.cash_vlu = (uint16_t)g_left_amount;
+    // ★仕様書準拠: ボタン押下時はpending値を送信
+    //   - g_pending_left_updated=1: g_pending_left_amount (ボタン押下時の+1値)
+    //   - g_pending_left_updated=0: g_left_amount (現在の表示値)
+    uint16_t cash_to_send = g_pending_left_updated ? g_pending_left_amount : g_left_amount;
+    atirq_plain.cash_vlu = cash_to_send;
     
     // STATUS: 16bitステータスフィールド（Table 4-14準拠）
     //   bit0: FACE有効無効 (0=無効, 1=有効)
@@ -499,14 +536,39 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
     encrypted_packet[34] = (uint8_t)(crc & 0xFF);         // LSB
     encrypted_packet[35] = (uint8_t)((crc >> 8) & 0xFF);  // MSB
 
-    bool result = uart_send_packet(encrypted_packet, 36);
+    // デバッグログ無効化（UART通信安定化）
+    #if 0
+    // デバッグ: ATIRQ送信直前ログ
+    systick_t send_time = get_systick_count_ms();
+    uint32_t send_sec = send_time / 1000;
+    NVIC_DisableIRQ(UART0_INT_IRQn);
+    printf("[%02lu:%02lu:%02lu.%03lu][ATIRQ_SEND] Calling uart_send_packet (36 bytes)\n",
+           (send_sec/3600)%24, (send_sec/60)%60, send_sec%60, (unsigned long)(send_time%1000));
+    printf("[ATIRQ_SEND] Data: %02X %02X %02X %02X %02X %02X...\n",
+           encrypted_packet[0], encrypted_packet[1], encrypted_packet[2],
+           encrypted_packet[3], encrypted_packet[4], encrypted_packet[5]);
+    NVIC_EnableIRQ(UART0_INT_IRQn);
+    #endif
+
+    bool result = uart_send_packet_fast(encrypted_packet, 36);
+    
+    #if 0
+    // デバッグ: ATIRQ送信完了ログ
+    systick_t complete_time = get_systick_count_ms();
+    uint32_t complete_sec = complete_time / 1000;
+    NVIC_DisableIRQ(UART0_INT_IRQn);
+    printf("[%02lu:%02lu:%02lu.%03lu][ATIRQ_SEND] uart_send_packet returned: %s (elapsed: %lu ms)\n",
+           (complete_sec/3600)%24, (complete_sec/60)%60, complete_sec%60, 
+           (unsigned long)(complete_time%1000),
+           result ? "true" : "false",
+           (unsigned long)(complete_time - send_time));
+    NVIC_EnableIRQ(UART0_INT_IRQn);
+    #endif
+    
     if (result) {
         debug_send_ok_count++;
         axon_test_record_response(0x6A);  // テストモード: ATIRQ送信記録
         DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_0 | DL_GPIO_PIN_1 | DL_GPIO_PIN_2);
-        
-        // IRQ信号をHigh(非アクティブ)に設定（ATIRQ応答完了）
-        clear_irq_signal();
         
         // イベント系ラッチをクリア（次回検出に備える）
         axon_status_clear_event_latches();
@@ -546,8 +608,8 @@ static bool aes_decrypt_cbc(const uint8_t* encrypted_data, uint8_t* decrypted_da
 }
 
 /**
- * @brief AES-128-CBC暗号化（ハードウェアAES使用）
- * @details TI SDK aes_cbc_256_enc_decサンプルと完全に同じ方式（Software wrapper CBC）
+ * @brief AES-256-ECB暗号化（ハードウェアAES使用）
+ * @details ECBモード（Electronic Codebook Mode）：各ブロックを独立して暗号化
  * @param plaintext_data 平文データ（32バイト）
  * @param encrypted_data 暗号化データ（32バイト）
  * @return true: 成功, false: 失敗
@@ -556,39 +618,26 @@ static bool aes_encrypt_cbc(const uint8_t* plaintext_data, uint8_t* encrypted_da
 {
     if (!plaintext_data || !encrypted_data) return false;
 
-    uint8_t prev[16];
-    uint8_t block[16];
     uint8_t cipher[16];
-
-    memcpy(prev, aes_iv, 16);
 
     //
     // MSPM0 AES IMPORTANT:
     // ECBモードへ切り替え後は KEY が壊れる可能性あり
     // かならず毎回 setKey を実行する（TI Errata対応）
     //
-    DL_AES_init(AES, DL_AES_MODE_ENCRYPT_ECB_MODE, DL_AES_KEY_LENGTH_128);
-    DL_AES_setKey(AES, (uint8_t*)aes_key, DL_AES_KEY_LENGTH_128);
+    DL_AES_init(AES, DL_AES_MODE_ENCRYPT_ECB_MODE, DL_AES_KEY_LENGTH_256);
+    DL_AES_setKey(AES, (uint8_t*)aes_key, DL_AES_KEY_LENGTH_256);
 
-    // ---------- Block 0 ----------
-    for (int i = 0; i < 16; i++)
-        block[i] = plaintext_data[i] ^ prev[i];
-
-    DL_AES_loadDataIn(AES, block);
+    // ---------- Block 0 (0-15バイト) ----------
+    DL_AES_loadDataIn(AES, (uint8_t*)plaintext_data);
     while (DL_AES_isBusy(AES));
     DL_AES_getDataOut(AES, cipher);
-
     memcpy(encrypted_data, cipher, 16);
-    memcpy(prev, cipher, 16);
 
-    // ---------- Block 1 ----------
-    for (int i = 0; i < 16; i++)
-        block[i] = plaintext_data[16 + i] ^ prev[i];
-
-    DL_AES_loadDataIn(AES, block);
+    // ---------- Block 1 (16-31バイト) ----------
+    DL_AES_loadDataIn(AES, (uint8_t*)(plaintext_data + 16));
     while (DL_AES_isBusy(AES));
     DL_AES_getDataOut(AES, cipher);
-
     memcpy(encrypted_data + 16, cipher, 16);
 
     return true;
@@ -666,8 +715,8 @@ static bool send_ack_frame(void)
     // テストモード: ACK送信記録
     axon_test_record_response(0x00);
     
-    // UART送信
-    return uart_send_packet((uint8_t*)&packet.ack, sizeof(ACK_PACKET));
+    // UART送信（高速版 - 応答は即座に返す）
+    return uart_send_packet_fast((uint8_t*)&packet.ack, sizeof(ACK_PACKET));
 }
 
 /**
@@ -678,6 +727,13 @@ static bool send_ack_frame(void)
  */
 static void clear_irq_signal(void)
 {
+    systick_t t = get_systick_count_ms();
+    uint32_t s = t / 1000;
+    NVIC_DisableIRQ(UART0_INT_IRQn);
+    printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] Low -> High (cleared)\n",
+           (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000));
+    NVIC_EnableIRQ(UART0_INT_IRQn);
+    
     DL_GPIO_setPins(UART_PORT, UART_IRQ_OUT_PIN);
 }
 
@@ -711,8 +767,8 @@ static bool send_nack_frame(uint8_t err_code)
     // テストモード: NACK送信記録
     axon_test_record_response(0x90);
     
-    // UART送信
-    return uart_send_packet((uint8_t*)&packet.nack, sizeof(NACK_PACKET));
+    // UART送信（高速版 - 応答は即座に返す）
+    return uart_send_packet_fast((uint8_t*)&packet.nack, sizeof(NACK_PACKET));
 }
 
 /**
@@ -812,15 +868,22 @@ bool axon_handle_setaxon(const uint8_t* encrypted_frame)
     uint8_t led_b = (setaxon->set_led & 0x04) != 0;
     uint8_t led_mode = (setaxon->set_led >> 4) & 0x07;
     
-    // RGB LED制御
-    if (led_r) DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_0);
-    else       DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_0);
-    
-    if (led_g) DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_1);
-    else       DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_1);
-    
-    if (led_b) DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_2);
-    else       DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_2);
+    // RGB LED制御（動作モードを考慮）
+    // led_mode: 0b000=消灯, 0b001=点灯, それ以外=消灯（点滅等は未実装）
+    if (led_mode == 0x01) {
+        // 点灯モード: RGB値に従って色を制御
+        if (led_r) DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_0);
+        else       DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_0);
+        
+        if (led_g) DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_1);
+        else       DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_1);
+        
+        if (led_b) DL_GPIO_setPins(GPIOB, DL_GPIO_PIN_2);
+        else       DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_2);
+    } else {
+        // 消灯モード（0b000）またはその他: すべて消灯
+        DL_GPIO_clearPins(GPIOB, DL_GPIO_PIN_0 | DL_GPIO_PIN_1 | DL_GPIO_PIN_2);
+    }
     
     // SET_TOUT (下位4bit: タイムアウト設定)
     uint8_t timeout = setaxon->set_tout & 0x0F;
@@ -831,7 +894,54 @@ bool axon_handle_setaxon(const uint8_t* encrypted_frame)
     
     // SET_FACE_N (設定面番号) → 7セグLED右側に表示
     // 0-9すべて有効（0=無効化状態も表示）
-    g_right_amount = setaxon->set_face_n;
+    
+    // 【面番号重複検出ロジック】
+    // ATIRQで送信したpending値とSETAXONで受信した値を比較
+    // 不一致の場合、SOMAが現在値（重複のため受け入れ拒否）を返したと判断
+    // → pending状態をクリアし、現在値を維持（SOMA-TG仕様書 7.4 準拠）
+    
+    if (g_pending_right_updated) {
+        // ボタン押下後のpending状態
+        
+        if (g_pending_right_amount != setaxon->set_face_n) {
+            // 不一致: ATIRQのL番 ≠ SETAXONのM番
+            // → SOMAが重複検出して現在値M番を返した（SOMA-TG仕様書 7.4 ①準拠）
+            log_event(LOG_DUPLICATE);
+            
+            // 受信した値（現在値）を設定
+            g_right_amount = setaxon->set_face_n;
+            
+            // ★自動リトライ: 次の番号(L+1)をpending値に設定
+            g_pending_right_amount = (g_pending_right_amount + 1) % 10;
+            
+            // ★CRITICAL: リトライ要求フラグを設定（メインループで自動IRQ送信）
+            g_retry_pending = 1;
+            // pending_updatedは維持（リトライ中）
+            
+            // メモリバリア
+            __asm__ volatile("" ::: "memory");
+        } else {
+            // 一致: 正常受理（SOMA-TG仕様書 7.4 ②③準拠）
+            log_event(LOG_ACCEPTED);
+            
+            g_right_amount = setaxon->set_face_n;
+            g_pending_right_amount = g_right_amount;
+            
+            // メモリバリア
+            __asm__ volatile("" ::: "memory");
+            
+            // ★CRITICAL: pending状態をクリア（正常完了）
+            g_pending_right_updated = 0;
+            g_retry_pending = 0;
+            
+            // メモリバリア
+            __asm__ volatile("" ::: "memory");
+        }
+    } else {
+        // pending更新なし → 通常の更新処理（初期化時など）
+        g_right_amount = setaxon->set_face_n;
+        g_pending_right_amount = g_right_amount;
+    }
     
     // SET_CASH_VLU (設定金額) → 7セグLED左側に表示
     // 金額は100円単位（0-99の範囲）
@@ -843,18 +953,58 @@ bool axon_handle_setaxon(const uint8_t* encrypted_frame)
     
     // 左側7セグ: 百の位（0-9）
     // set_cash_vluの値をそのまま表示（1桁目は百円単位）
-    g_left_amount = cash_value;
     
-    // 7セグLED即座に更新
+    // 【金額重複検出ロジック】（面番号と同様の処理）
+    if (g_pending_left_updated) {
+        if (g_pending_left_amount != cash_value) {
+            // 重複検出: ATIRQの金額 ≠ SETAXONの金額
+            // ※仕様上、金額の重複チェックは不要だが、安全のため実装
+            g_pending_left_amount = (g_pending_left_amount + 1) % 100;
+            if (g_pending_left_amount > 99) g_pending_left_amount = 0;
+            
+            // ★CRITICAL: pending更新フラグを明示的に維持
+            g_pending_left_updated = 1;
+            
+            g_left_amount = g_pending_left_amount;
+            // 金額のリトライは不要（面番号のみ）
+        } else {
+            // 正常受理
+            g_left_amount = cash_value;
+            g_pending_left_amount = g_left_amount;
+            g_pending_left_updated = 0;
+        }
+    } else {
+        // 通常更新
+        g_left_amount = cash_value;
+        g_pending_left_amount = g_left_amount;
+    }
+    
+    // 7セグLED即座に更新（点滅モード対応）
     extern void update_segment_leds(const uint8_t amount1, const uint8_t amount2);
     update_segment_leds(g_left_amount, g_right_amount);
     
-    // 共有ステータスに設定値を反映
-    g_axon_status_shared.face_number = g_right_amount;
+    // 注: 点滅モードの終了は両ボタン同時長押しで実施（axon_routine.c内で処理）
+    //     SETAXON受信時は点滅を継続する
+    
+    // 共有ステータスに設定値を反映（重複検出時も正しい値を設定）
+    // ★修正: 重複検出時はpending値、正常受理時は確定値を設定
+    if (g_pending_right_updated && g_pending_right_amount != setaxon->set_face_n) {
+        // 重複検出時: pending値（次の候補値）を設定
+        g_axon_status_shared.face_number = g_pending_right_amount;
+    } else {
+        // 正常受理時: 確定値を設定
+        g_axon_status_shared.face_number = g_right_amount;
+    }
     g_axon_status_shared.cash_value = (uint16_t)g_left_amount;
     g_axon_status_shared.solenoid_on = sol_on ? 1U : 0U;
     g_axon_status_shared.block_solenoid_on = cash_block_on ? 1U : 0U;
     g_axon_status_shared.led_pattern = setaxon->set_led;
+    
+    // リセットフラグをクリア（SETAXONコマンド受信 = 正常動作中）
+    g_axon_status_shared.reset_flag = 0;
+    
+    // コマンド受信トグル（SETAXONコマンド受信毎にトグル）
+    g_cmd_recv_toggle ^= 1;
     
     // タイムアウト値を保存（秒単位に変換）
     // タイムアウト値マッピング: 0=30秒, 1=15秒, 2=20秒, ..., 0xE=無限秒
@@ -865,11 +1015,6 @@ bool axon_handle_setaxon(const uint8_t* encrypted_frame)
     
     // 8. ACK応答送信
     bool ack_result = send_ack_frame();
-    
-    // 9. ACK送信成功後、IRQ信号をHigh(非アクティブ)にクリア
-    if (ack_result) {
-        clear_irq_signal();
-    }
     
     return ack_result;
 }

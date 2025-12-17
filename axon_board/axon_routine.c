@@ -17,11 +17,34 @@
 #include "soma_uart_test.h"
 #include "protocol/src/s2a_packet.h"  // CHKIRQ/SETAXON等のハンドラ
 #include "axon_status.h"  // AXON状態管理構造体
+#include "debug_log.h"  // ノンブロッキングログ
+
+// デバッグログバッファ（グローバル変数）
+debug_log_t g_debug_log = {0};
+
+// 重複検出後の自動リトライフラグ (s2a_packet.cで定義)
+extern volatile uint8_t g_retry_irq_request;
 
 #define POLLING_INTERVAL_MS (500U)
 #define SWITCH_DEBOUNCE_US  (50U)
 #define DEBOUNCE_CYCLES_1US (CPUCLK_FREQ / 1000000U)
 #define BUTTON_INTERVAL_MS  (250U)
+#define BUTTON_LONG_PRESS_MS (2000U)  // 長押し検出時間: 3秒（テストしやすい時間、仕様は5秒）
+#define BUTTON_BOTH_LONG_PRESS_MS (2000U)  // 両ボタン同時長押し: 2秒（※仕様書には記載なし、誤操作防止用）
+#define LED_BLINK_INTERVAL_MS (500U)  // LED点滅周期: 500ms
+#define AUTO_RETRY_INTERVAL_MS (50U)  // 自動リトライ間隔: 50ms（重複検出後の最速再試行）
+
+// ボタン処理用の構造体
+typedef struct {
+    systick_t *press_start;           // 押下開始時刻へのポインタ
+    button_event_t *event;             // ボタンイベントへのポインタ
+    volatile uint8_t *pending_amount;  // pending値へのポインタ
+    volatile uint8_t *pending_updated; // pending更新フラグへのポインタ
+    uint8_t *current_amount;           // 現在値へのポインタ
+    systick_t *release_candidate_time; // リリース候補時刻
+    uint8_t *release_candidate_flag;   // リリース候補フラグ
+    const char *name;                  // デバッグ用ボタン名
+} button_context_t;
 
 typedef enum {
     STATE_NONE,
@@ -33,14 +56,14 @@ typedef enum {
 
 typedef struct {
     terminal_status_t status;
-    uint8_t           amount;
-    uint8_t           led_state;
-    uint8_t           sol_state;
-    uint8_t           dial_state;
-    systick_t         last_poll_time;
-    uint8_t           dial_detect;
-    uint8_t           left_amount;   // 0-9
-    uint8_t           right_amount;  // 0-9
+    uint8_t           sol_state;           // ソレノイド状態（SOMA_BOARD用）
+    uint8_t           dial_detect;         // ダイヤル検出（SOMA_BOARD用）
+    uint8_t           left_amount;         // 0-9 (7セグLED左側)
+    uint8_t           right_amount;        // 0-9 (7セグLED右側)
+    uint8_t           led_blink_mode;      // 0: 点灯, 1: 点滅(変更モード中)
+    uint8_t           led_blink_state;     // 点滅時の現在状態(0: 消灯, 1: 点灯)
+    systick_t         button1_press_start; // ボタン1長押し開始時刻
+    systick_t         button2_press_start; // ボタン2長押し開始時刻
 } axon_status_t;
 
 #ifdef AXON_BOARD
@@ -48,9 +71,6 @@ button_event_t g_rotary_event;
 
 button_event_t g_escrow_event;      // エスクロ検知
 button_event_t g_coindet_event;     // 現金検知
-
-// デバッグ: 起動5秒後にCOIN_DET疑似入力
-static uint8_t g_coin_test_triggered = 0;
 button_event_t g_connector_event;   // コネクタ検知(予備GPIO)
 button_event_t g_soldout_event;     // 売り切れ検知SW
 button_event_t g_door_event;        // ドア開閉検知
@@ -62,8 +82,21 @@ button_event_t g_button_2_event;
 volatile axon_status_shared_t g_axon_status_shared = {0};
 
 // 7セグLED表示値（protocol/src/s2a_packet.cから参照）
-uint8_t g_left_amount = 0;
-uint8_t g_right_amount = 0;
+// ★CRITICAL: volatile必須（ISR/メインループ/UARTハンドラー間で共有）
+volatile uint8_t g_left_amount = 0;
+volatile uint8_t g_right_amount = 0;
+
+// ATIRQ送信用の一時変数（ボタン押下時の+1値を保持、SETAXON受信まで表示は更新しない）
+// ★CRITICAL: volatile必須（メインループでセット、UARTハンドラーでクリア）
+volatile uint8_t g_pending_left_amount = 0;
+volatile uint8_t g_pending_right_amount = 0;
+volatile uint8_t g_pending_left_updated = 0;   // 1=pending値が更新済み（ATIRQ送信すべき）
+volatile uint8_t g_pending_right_updated = 0;  // 1=pending値が更新済み（ATIRQ送信すべき）
+volatile uint8_t g_retry_pending = 0;          // 1=重複検出リトライ中（新規ボタン押下を抑制）
+
+// IRQ_N信号制御フラグ（メインループで50msパルス処理）
+static volatile uint8_t g_irq_pulse_pending = 0;  // 1=IRQ_N Lowセット済み、50ms待機→High必要
+static volatile systick_t g_irq_pulse_start_time = 0;  // IRQ_N Low開始時刻
 
 // AXON状態管理（protocol/src/s2a_packet.cから参照）
 axon_status_t g_axon_state = {0};
@@ -105,15 +138,9 @@ static inline void _parse_uart_terminal_status_data(const uint8_t data, uint8_t*
     }
 }
 
-static inline void _set_amount(const uint8_t amount) {
-    // amountの設定
-    // ここに実際のハードウェア制御コードを追加
-}
+#endif  // SOMA_BOARD
 
-static inline void _set_led_pins(const uint8_t state) {
-    // LEDの設定
-    // ここに実際のハードウェア制御コードを追加
-}
+#ifdef AXON_BOARD
 
 static inline void _set_solenoid_pins(const uint8_t state) {
     // DL_GPIO_writePinsVal(DIAL_LOCK_SOL_PORT, DIAL_LOCK_SOL_PIN, state ? DIAL_LOCK_SOL_PIN : 0);
@@ -125,39 +152,47 @@ static inline void _set_segment_led(GPIO_Regs* gpio, uint32_t segment_mask, cons
     // bit lines GFEDCBA
     // 7 ... 0 bits
     uint32_t seg_bits = 0;
-    switch (amount) {
-        case 0:
-            seg_bits = 0b00111111;
-            break;
-        case 1:
-            seg_bits = 0b00000110;
-            break;
-        case 2:
-            seg_bits = 0b01011011;
-            break;
-        case 3:
-            seg_bits = 0b01001111;
-            break;
-        case 4:
-            seg_bits = 0b01100110;
-            break;
-        case 5:
-            seg_bits = 0b01101101;
-            break;
-        case 6:
-            seg_bits = 0b01111101;
-            break;
-        case 7:
-            seg_bits = 0b00000111;
-            break;
-        case 8:
-            seg_bits = 0b01111111;
-            break;
-        case 9:
-            seg_bits = 0b01101111;
-            break;
-        default:
-            break;
+    
+    // 0xFF は消灯用の特殊値
+    if (amount == 0xFF) {
+        seg_bits = 0b00000000;  // 全セグメント消灯
+    } else {
+        switch (amount) {
+            case 0:
+                seg_bits = 0b00111111;
+                break;
+            case 1:
+                seg_bits = 0b00000110;
+                break;
+            case 2:
+                seg_bits = 0b01011011;
+                break;
+            case 3:
+                seg_bits = 0b01001111;
+                break;
+            case 4:
+                seg_bits = 0b01100110;
+                break;
+            case 5:
+                seg_bits = 0b01101101;
+                break;
+            case 6:
+                seg_bits = 0b01111101;
+                break;
+            case 7:
+                seg_bits = 0b00000111;
+                break;
+            case 8:
+                seg_bits = 0b01111111;
+                break;
+            case 9:
+                seg_bits = 0b01101111;
+                break;
+            default:
+                // 範囲外の値（10以上）は0を表示（0-9の範囲で循環）
+                seg_bits = 0b00111111;  // 0の表示パターン
+                break;
+        }
     }
 
     DL_GPIO_writePinsVal(gpio, segment_mask, (seg_bits << bit_offset) & segment_mask);
@@ -169,8 +204,27 @@ static inline void _set_segment_leds(const uint8_t amount1, const uint8_t amount
 }
 
 // 外部から呼び出せる7セグLED更新関数（s2a_packet.cから使用）
+// 注: 点滅モード中は現在値のみ更新し、表示はメインループの点滅処理に任せる
 void update_segment_leds(const uint8_t amount1, const uint8_t amount2) {
-    _set_segment_leds(amount1, amount2);
+    // グローバル変数を更新（s2a_packet.cで参照される）
+    g_left_amount = amount1;
+    g_right_amount = amount2;
+    
+    // 内部状態も更新
+    g_axon_state.left_amount = amount1;
+    g_axon_state.right_amount = amount2;
+    
+    // 通常モード（非点滅）の場合のみ即座に表示更新
+    if (!g_axon_state.led_blink_mode) {
+        _set_segment_leds(amount1, amount2);
+    }
+    // 点滅モード中は表示更新しない（メインループの点滅処理が制御）
+}
+
+// 外部から呼び出せる点滅モードクリア関数（s2a_packet.cから使用）
+void axon_clear_blink_mode(void) {
+    g_axon_state.led_blink_mode = 0;   // 点滅モード終了
+    g_axon_state.led_blink_state = 1;  // 常時点灯状態
 }
 
 static inline bool _check_debounce_complete(button_event_t* event, uint32_t debounce_us) {
@@ -199,6 +253,141 @@ static inline bool _check_debounce_complete(button_event_t* event, uint32_t debo
     }
 
     return false;
+}
+
+// ==========================================
+// ボタン処理ヘルパー関数
+// ==========================================
+
+/**
+ * @brief ボタン押下時の処理（長押し開始時刻記録）
+ * @param ctx ボタンコンテキスト
+ * @param both_buttons_pressed 両ボタン同時押しフラグ
+ * @param other_button_pressed 他方のボタン押下状態
+ */
+static inline void handle_button_press(button_context_t *ctx, uint8_t both_buttons_pressed, uint8_t other_button_pressed) {
+    *ctx->release_candidate_flag = 0;  // 押下中はリリース候補をキャンセル
+    systick_t current_time = get_systick_count_ms();
+    
+    // リリース待ち状態
+    if (*ctx->press_start == 0xFFFFFFFF) {
+        return;
+    }
+    
+    // 長押し開始時刻を記録（両ボタン同時押下中でない時）
+    if (*ctx->press_start == 0 && !both_buttons_pressed) {
+        *ctx->press_start = current_time;
+        printf("[%s] Press started at %lu ms, waiting for long press (%u ms)\n", 
+               ctx->name, (unsigned long)current_time, BUTTON_LONG_PRESS_MS);
+        return;
+    }
+    
+    // 長押し待機中の処理（両ボタン同時押し時はスキップ）
+    // 注: both_buttons_pressedフラグはメインループで管理されているため、ここでは個別の長押し検出のみを行う
+    if (!both_buttons_pressed && *ctx->press_start != 0) {
+        static systick_t last_debug_time[2] = {0, 0};
+        int idx = (ctx->name[6] == '2') ? 1 : 0;  // "BUTTON1" or "BUTTON2"
+        
+        uint32_t elapsed = current_time - *ctx->press_start;
+        
+        #ifdef DEBUG_BUTTON_VERBOSE
+        // デバッグ出力（1秒ごと）
+        if (elapsed > 0 && (elapsed - (elapsed % 1000)) > last_debug_time[idx]) {
+            printf("[%s] Long press progress: %lu ms / %u ms (blink_mode=%d, other_btn=%d)\n", 
+                   ctx->name, (unsigned long)elapsed, BUTTON_LONG_PRESS_MS, 
+                   g_axon_state.led_blink_mode, other_button_pressed);
+            last_debug_time[idx] = elapsed - (elapsed % 1000);
+        }
+        #endif
+        
+        // 長押し判定（3秒）→ 点滅モードトグル（SOMA-TG仕様書 7.3章準拠）
+        if (elapsed >= BUTTON_LONG_PRESS_MS) {
+            if (!g_axon_state.led_blink_mode) {
+                // 通常モード → 点滅モード開始
+                g_axon_state.led_blink_mode = 1;
+                printf("[BUTTON] Long press detected on %s, LED blink mode started\n", ctx->name);
+            } else {
+                // 点滅モード → 通常モード（確定・完了）
+                g_axon_state.led_blink_mode = 0;
+                g_axon_state.led_blink_state = 1;  // LED点灯に戻す
+                printf("[BUTTON] Long press detected on %s, LED blink mode stopped (confirmed)\n", ctx->name);
+            }
+            *ctx->press_start = 0xFFFFFFFF;  // リリース待ち状態
+            ctx->event->last_press_time_ms = current_time;
+            #ifdef DEBUG_BUTTON_VERBOSE
+            last_debug_time[idx] = 0;
+            #endif
+        }
+    }
+}
+
+/**
+ * @brief ボタンリリース時の処理（短押し/長押し判定）
+ * @param ctx ボタンコンテキスト
+ */
+static inline void handle_button_release(button_context_t *ctx) {
+    systick_t current_time = get_systick_count_ms();
+    
+    // 通常リリース処理（press_start記録中）
+    if (*ctx->press_start != 0 && *ctx->press_start != 0xFFFFFFFF) {
+        if (!*ctx->release_candidate_flag) {
+            *ctx->release_candidate_time = current_time;
+            *ctx->release_candidate_flag = 1;
+        } else if ((current_time - *ctx->release_candidate_time) >= 50) {
+            uint32_t elapsed = *ctx->release_candidate_time - *ctx->press_start;
+            
+            // チャタリング判定
+            if (elapsed < 100) {
+                printf("[%s] Ignored chattering: %lu ms\n", ctx->name, (unsigned long)elapsed);
+                *ctx->release_candidate_flag = 0;
+                return;
+            }
+            
+            // 短押し判定（3秒未満でリリース）
+            if (elapsed < BUTTON_LONG_PRESS_MS) {
+                // 点滅モード中のみ値を変更可能（SOMA-TG仕様書 7.3章準拠）
+                if (g_axon_state.led_blink_mode && !g_retry_pending) {
+                    if ((ctx->event->last_press_time_ms + BUTTON_INTERVAL_MS) < current_time) {
+                        // pending値は常にcurrent_amountを基準に+1（0-9の範囲で循環）
+                        *ctx->pending_amount = (*ctx->current_amount + 1) % 10;
+                        *ctx->pending_updated = 1;
+                        
+                        // IRQ送信
+                        DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);
+                        
+                        g_irq_pulse_start_time = get_systick_count_ms();
+                        g_irq_pulse_pending = 1;
+                        ctx->event->last_press_time_ms = current_time;
+                        
+                        printf("[%s] Value changed: %d -> %d (blink mode)\n", 
+                               ctx->name, *ctx->current_amount, *ctx->pending_amount);
+                    }
+                }
+            } else {
+                // 長押し完了後のリリース
+                printf("[%s] Released after %lu ms (long press threshold: %u ms)\n", 
+                       ctx->name, (unsigned long)elapsed, BUTTON_LONG_PRESS_MS);
+            }
+            
+            *ctx->press_start = 0;
+            *ctx->release_candidate_flag = 0;
+        }
+    }
+    // 長押し完了後のリリース処理
+    else if (*ctx->press_start == 0xFFFFFFFF) {
+        if (!*ctx->release_candidate_flag) {
+            *ctx->release_candidate_time = current_time;
+            *ctx->release_candidate_flag = 1;
+        } else if ((current_time - *ctx->release_candidate_time) >= 50) {
+            printf("[%s] Released (after long press completion)\n", ctx->name);
+            *ctx->press_start = 0;
+            *ctx->release_candidate_flag = 0;
+        }
+    }
+    // リセット
+    else {
+        *ctx->release_candidate_flag = 0;
+    }
 }
 
 #endif  // AXON_BOARD
@@ -334,28 +523,28 @@ void axon_routine_main(void* args) {
     _change_status(&g_axon_state, STATE_NOTIFY);
     DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, UART_IRQ_OUT_PIN);
 
+    // ATIRQ送信用の一時変数を現在値で初期化（起動時）
+    g_pending_left_amount = g_left_amount;
+    g_pending_right_amount = g_right_amount;
+    
+    // 内部状態も初期化
+    g_axon_state.left_amount = g_left_amount;
+    g_axon_state.right_amount = g_right_amount;
+    g_axon_state.led_blink_mode = 0;   // 通常モード（点灯）
+    g_axon_state.led_blink_state = 1;  // 点灯状態
+    
+    // ★追加: リセットフラグを設定（起動時のATIRQでSOMAに通知）
+    g_axon_status_shared.reset_flag = 1;
+
     _set_segment_leds(g_axon_state.left_amount, g_axon_state.right_amount);
 
     while (1) {
-        // デバッグ: 5秒毎にCOIN_DET疑似入力
-        {
-            static systick_t last_coin_test_time = 0;
-            systick_t current_time = get_systick_count_ms();
-            if (current_time - last_coin_test_time >= 5000) {
-                last_coin_test_time = current_time;
-                g_coindet_event.pressed = 1;
-                g_coindet_event.phase_time = current_time;
-                printf("[DEBUG] Simulated COIN_DET input at %lu ms\r\n", (unsigned long)current_time);
-            }
-        }
-        
         // check dial rotation
         if (g_axon_state.status == STATE_SOL_ON) {
             bool dial_rotated = _check_debounce_complete(&g_rotary_event, SWITCH_DEBOUNCE_US);
             if (dial_rotated) {
                 g_axon_state.sol_state   = 0;
                 g_axon_state.dial_detect = 1;
-                g_axon_state.dial_state  = 1;
                 _change_status(&g_axon_state, STATE_DIAL_DETECT);
                 _set_solenoid_pins(g_axon_state.sol_state);
                 changed = true;
@@ -365,111 +554,253 @@ void axon_routine_main(void* args) {
             delay_cycles(CPUCLK_FREQ / 10000);
         }
 
-        // select segment LEDs
-        if (g_button_1_event.pressed) {
-            if (g_button_1_event.last_press_time_ms + BUTTON_INTERVAL_MS < get_systick_count_ms()) {
-                if (g_axon_state.left_amount < 9) {
-                    g_axon_state.left_amount++;
-                } else {
-                    g_axon_state.left_amount = 0;
-                }
-                g_left_amount = g_axon_state.left_amount;  // グローバル変数も同期
-                g_button_1_event.pressed            = 0;
-                g_button_1_event.last_press_time_ms = get_systick_count_ms();
+        // ==========================================
+        // ボタン押下処理（SOMA-TG仕様書 7.3, 7.4, 7.5準拠）
+        // ==========================================
+        
+        // 両ボタン同時長押し検出（設定確定: 変更モード終了）
+        static uint8_t both_buttons_pressed = 0;
+        static systick_t both_press_start = 0;
+        static uint8_t both_release_lockout = 0;  // 両ボタンリリース直後の個別処理抑制フラグ
+        
+        // Button1/2用のチャタリング対策変数
+        static systick_t release_candidate_time1 = 0;
+        static uint8_t release_candidate1 = 0;
+        static systick_t release_candidate_time2 = 0;
+        static uint8_t release_candidate2 = 0;
+        
+        // ボタンコンテキスト初期化
+        button_context_t btn1_ctx = {
+            .press_start = &g_axon_state.button1_press_start,
+            .event = &g_button_1_event,
+            .pending_amount = &g_pending_left_amount,
+            .pending_updated = &g_pending_left_updated,
+            .current_amount = &g_axon_state.left_amount,
+            .release_candidate_time = &release_candidate_time1,
+            .release_candidate_flag = &release_candidate1,
+            .name = "BUTTON1"
+        };
+        
+        button_context_t btn2_ctx = {
+            .press_start = &g_axon_state.button2_press_start,
+            .event = &g_button_2_event,
+            .pending_amount = &g_pending_right_amount,
+            .pending_updated = &g_pending_right_updated,
+            .current_amount = &g_axon_state.right_amount,
+            .release_candidate_time = &release_candidate_time2,
+            .release_candidate_flag = &release_candidate2,
+            .name = "BUTTON2"
+        };
+        
+        // 両ボタン同時押下検出（誤操作防止＋点滅モード終了）
+        // 注: 仕様書7.3章では各ボタン長押しでトグルだが、両ボタン長押しで強制終了も実装
+        if (g_button_1_event.pressed && g_button_2_event.pressed) {
+            if (!both_buttons_pressed) {
+                both_buttons_pressed = 1;
+                both_press_start = get_systick_count_ms();
+                printf("[BUTTON] Both buttons pressed, individual button actions disabled\n");
+                // 両ボタン同時押し開始時に個別のpress_startをリセット（長押し検出を無効化）
+                g_axon_state.button1_press_start = 0;
+                g_axon_state.button2_press_start = 0;
+            }
+            
+            // リリースロックアウトをクリア（両ボタン押下中は通常状態）
+            both_release_lockout = 0;
+            
+            // 2秒経過チェック（点滅モード中のみ終了処理）
+            if (g_axon_state.led_blink_mode && 
+                (get_systick_count_ms() - both_press_start) >= BUTTON_BOTH_LONG_PRESS_MS) {
+                g_axon_state.led_blink_mode = 0;
+                g_axon_state.led_blink_state = 1;
+                printf("[BUTTON] Both buttons long press detected, LED blink mode stopped\n");
+                // リリース待ち状態に設定（連続実行防止）
+                g_axon_state.button1_press_start = 0xFFFFFFFF;
+                g_axon_state.button2_press_start = 0xFFFFFFFF;
+            }
+        } else {
+            if (both_buttons_pressed) {
+                printf("[BUTTON] At least one button released (both_buttons_pressed cleared)\n");
+                both_buttons_pressed = 0;
+                // 両ボタン解除直後は個別のpress_startを強制リセット（汚染防止）
+                g_axon_state.button1_press_start = 0;
+                g_axon_state.button2_press_start = 0;
+                // ★両ボタンリリース直後は個別処理を抑制（リリースエッジでのインクリメント防止）
+                both_release_lockout = 1;
+            }
+            
+            // ★両ボタンが両方リリースされたらロックアウト解除
+            if (both_release_lockout && !g_button_1_event.pressed && !g_button_2_event.pressed) {
+                both_release_lockout = 0;
+                printf("[BUTTON] Both buttons fully released, individual processing re-enabled\n");
             }
         }
-
-        if (g_button_2_event.pressed) {
-            if (g_button_2_event.last_press_time_ms + BUTTON_INTERVAL_MS < get_systick_count_ms()) {
-                if (g_axon_state.right_amount < 9) {
-                    g_axon_state.right_amount++;
-                } else {
-                    g_axon_state.right_amount = 0;
-                }
-                g_right_amount = g_axon_state.right_amount;  // グローバル変数も同期
-                g_button_2_event.pressed            = 0;
-                g_button_2_event.last_press_time_ms = get_systick_count_ms();
-            }
+        
+        // Button1処理（両ボタン同時押し中または両ボタンリリース直後は個別処理をスキップ）
+        if (g_button_1_event.pressed && !both_buttons_pressed && !both_release_lockout) {
+            handle_button_press(&btn1_ctx, both_buttons_pressed, g_button_2_event.pressed);
+        } else if (!both_buttons_pressed && !both_release_lockout) {
+            handle_button_release(&btn1_ctx);
         }
-        // // ESCROW SW
-        // if (g_escrow_event.pressed) {
-        //     // エスクロ検知時の処理
-        //     if (g_escrow_event.last_press_time_ms + 10 < get_systick_count_ms()) {
-        //         // エスクロ検知処理
-        //         g_axon_state.left_amount = 1;  // デバッグ用
-        //         g_axon_state.right_amount = 1; // デバッグ用
-        //     }
-        //     g_escrow_event.pressed            = 0;
-        //     g_escrow_event.last_press_time_ms = get_systick_count_ms();
-        // }
+        
+        // Button2処理（両ボタン同時押し中または両ボタンリリース直後は個別処理をスキップ）
+        if (g_button_2_event.pressed && !both_buttons_pressed && !both_release_lockout) {
+            handle_button_press(&btn2_ctx, both_buttons_pressed, g_button_1_event.pressed);
+        } else if (!both_buttons_pressed && !both_release_lockout) {
+            handle_button_release(&btn2_ctx);
+        }
+        
+        // ESCROW SW (エスクロ/返却ボタン検知)
+        if (g_escrow_event.pressed) {
+            // エスクロ検知時の処理: STATUS bit4をLatch、IRQ信号をSOMAに送信
+            axon_status_latch_escrow();  // STATUS bit4=1 (返却ボタン押下)に設定
+            
+            systick_t log_time = get_systick_count_ms();
+            uint32_t log_sec = log_time / 1000;
+            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (Escrow detected)\n",
+                   (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000));
+            DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
+            
+            // IRQ_Nパルス制御をメインループに移管
+            g_irq_pulse_start_time = log_time;
+            g_irq_pulse_pending = 1;
+            
+            g_escrow_event.pressed            = 0;
+            g_escrow_event.last_press_time_ms = log_time;
+        }
 
         if (g_coindet_event.pressed) {
             // 現金検知時の処理: STATUS bit3をLatch、IRQ信号をSOMAに送信
             axon_status_latch_coin();  // STATUS bit3=0 (現金投入中)に設定
             
-            // IRQ信号をLow(アクティブ)に設定してSOMAに通知
-            DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);
+            systick_t log_time = get_systick_count_ms();
+            uint32_t log_sec = log_time / 1000;
+            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (Coin detected)\n",
+                   (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000));
+            DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
+            
+            // IRQ_Nパルス制御をメインループに移管
+            g_irq_pulse_start_time = log_time;
+            g_irq_pulse_pending = 1;
             
             g_coindet_event.pressed = 0;
         }
 
-        // if (g_connector_event.pressed) {
-        //     // コネクタ検知時の処理
-        //     if (g_connector_event.last_press_time_ms + 10 < get_systick_count_ms()) {
-        //         // コネクタ検知処理
-        //         g_axon_state.left_amount = 5;  // デバッグ用
-        //         g_axon_state.right_amount = 5; // デバッグ用
-        //     }
-        //     g_connector_event.pressed            = 0;
-        //     g_connector_event.last_press_time_ms = get_systick_count_ms();
-        // }
-
-        // if (g_soldout_event.pressed) {
-        //     // 売り切れ検知時の処理
-        //     if (g_soldout_event.last_press_time_ms + 10 < get_systick_count_ms()) {
-        //         // 売り切れ検知処理
-        //         g_axon_state.left_amount = 7;  // デバッグ用
-        //         g_axon_state.right_amount = 7; // デバッグ用
-        //     }
-        //     g_soldout_event.pressed            = 0;
-        //     g_soldout_event.last_press_time_ms = get_systick_count_ms();
-        // }
-
-        // if (g_door_event.pressed) {
-        //     // ドア開閉検知時の処理
-        //     if (g_door_event.last_press_time_ms + 10 < get_systick_count_ms()) {
-        //         // ドア開閉検知処理
-        //         g_axon_state.left_amount = 9;  // デバッグ用
-        //         g_axon_state.right_amount = 9; // デバッグ用
-        //     }
-        //     g_door_event.pressed            = 0;
-        //     g_door_event.last_press_time_ms = get_systick_count_ms();
-        // }
-
-        // for debug CN3 ROT_DET(11pin) TEST
-        // if (g_rotary_event.pressed ){
-        //     // ダイヤル回転検知
-        //     if (g_rotary_event.last_press_time_ms + 10 < get_systick_count_ms()) {
-        //         // ダイヤル回転検知
-        //         g_axon_state.left_amount = 2;
-        //         g_axon_state.right_amount = 2;
-        //     }
-        //     g_rotary_event.pressed = 0;
-        //     g_rotary_event.last_press_time_ms = get_systick_count_ms();
-        // }
-
-
-        // 7セグLED更新: グローバル変数とローカル変数を同期
-        // SETAXONで更新された値を優先的に反映
-        if (g_left_amount != g_axon_state.left_amount) {
-            g_axon_state.left_amount = g_left_amount;
-        }
-        if (g_right_amount != g_axon_state.right_amount) {
-            g_axon_state.right_amount = g_right_amount;
+        // 売り切れ検知SW
+        if (g_soldout_event.pressed) {
+            // 売り切れ検知時の処理: STATUS bit1をセット、IRQ信号をSOMAに送信
+            g_axon_status_shared.sold_out = 1U;  // STATUS bit1=1 (売り切れ)
+            
+            systick_t log_time = get_systick_count_ms();
+            uint32_t log_sec = log_time / 1000;
+            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (Sold out detected)\n",
+                   (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000));
+            DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
+            
+            // IRQ_Nパルス制御をメインループに移管
+            g_irq_pulse_start_time = log_time;
+            g_irq_pulse_pending = 1;
+            
+            g_soldout_event.pressed            = 0;
+            g_soldout_event.last_press_time_ms = log_time;
         }
 
-        // 7seg LED 更新
-        _set_segment_leds(g_axon_state.left_amount, g_axon_state.right_amount);
+        // ドア開閉検知SW
+        if (g_door_event.pressed) {
+            // ドア開閉検知時の処理: STATUS bit6をセット、IRQ信号をSOMAに送信
+            g_axon_status_shared.door_open = 1U;  // STATUS bit6=1 (ドア開)
+            
+            systick_t log_time = get_systick_count_ms();
+            uint32_t log_sec = log_time / 1000;
+            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (Door opened)\n",
+                   (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000));
+            DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
+            
+            // IRQ_Nパルス制御をメインループに移管
+            g_irq_pulse_start_time = log_time;
+            g_irq_pulse_pending = 1;
+            
+            g_door_event.pressed            = 0;
+            g_door_event.last_press_time_ms = log_time;
+        }
+
+        // ダイヤル回転検知（CN3 ROT_DET 11pin）
+        if (g_rotary_event.pressed) {
+            // ダイヤル回転検知時の処理: Latch、IRQ信号をSOMAに送信
+            axon_status_latch_dial();  // 内部状態にダイヤル回転をラッチ
+            
+            systick_t log_time = get_systick_count_ms();
+            uint32_t log_sec = log_time / 1000;
+            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (Dial rotated)\n",
+                   (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000));
+            DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
+            
+            // IRQ_Nパルス制御をメインループに移管
+            g_irq_pulse_start_time = log_time;
+            g_irq_pulse_pending = 1;
+            
+            g_rotary_event.pressed = 0;
+            g_rotary_event.last_press_time_ms = log_time;
+        }
+
+
+        // ==========================================
+        // 7セグLED更新処理（点滅制御含む）
+        // ==========================================
+        
+        // グローバル変数とローカル変数の同期は update_segment_leds() で行われるため、ここでは不要
+        // （update_segment_leds() が g_left_amount, g_right_amount, g_axon_state を同時に更新）
+
+        // LED点滅制御（変更モード中は500ms周期で点滅）
+        static systick_t last_blink_toggle = 0;
+        static uint8_t prev_blink_mode = 0;  // 前回の点滅モード状態
+        systick_t current_time_blink = get_systick_count_ms();
+        
+        // 点滅モード開始時の初期化
+        if (g_axon_state.led_blink_mode && !prev_blink_mode) {
+            last_blink_toggle = current_time_blink;
+            g_axon_state.led_blink_state = 1;  // 点灯状態から開始
+            printf("[LED] Blink mode started\n");
+        }
+        prev_blink_mode = g_axon_state.led_blink_mode;
+        
+        if (g_axon_state.led_blink_mode) {
+            // 点滅モード（変更中）
+            if ((current_time_blink - last_blink_toggle) >= LED_BLINK_INTERVAL_MS) {
+                g_axon_state.led_blink_state = !g_axon_state.led_blink_state;
+                last_blink_toggle = current_time_blink;
+            }
+            
+            // 点滅状態に応じて表示/消灯
+            if (g_axon_state.led_blink_state) {
+                _set_segment_leds(g_axon_state.left_amount, g_axon_state.right_amount);
+            } else {
+                _set_segment_leds(0xFF, 0xFF);  // 消灯（全セグメントOFF）
+            }
+        } else {
+            // 通常モード（常時点灯）
+            g_axon_state.led_blink_state = 1;
+            _set_segment_leds(g_axon_state.left_amount, g_axon_state.right_amount);
+        }
+
+        // ==========================================
+        // IRQ_N 50msパルス制御（メインループ処理）
+        // ==========================================
+        // ボタン押下やイベント発生時にIRQ_N Lowにセットし、50ms後にHighに戻す
+        // delay_cycles()を使わず、メインループで時間経過をチェック
+        // 注: UART処理の直前に配置し、IRQ_N信号を速やかにHighに戻す
+        if (g_irq_pulse_pending) {
+            systick_t current_time = get_systick_count_ms();
+            if ((current_time - g_irq_pulse_start_time) >= 50) {
+                // 50ms経過 → IRQ_N Highに戻す
+                DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, UART_IRQ_OUT_PIN);
+                g_irq_pulse_pending = 0;
+                
+                uint32_t log_sec = current_time / 1000;
+                printf("[%02u:%02u:%02u.%03u][IRQ_SIGNAL] Low -> High (50ms pulse completed)\n",
+                       (unsigned int)((log_sec/3600)%24), (unsigned int)((log_sec/60)%60),
+                       (unsigned int)(log_sec%60), (unsigned int)(current_time%1000));
+            }
+        }
 
         // ==========================================
         // SOMA UARTテスト: フレームチェック
@@ -491,55 +822,6 @@ void axon_routine_main(void* args) {
         extern volatile uint32_t debug_sync_reset_count;
         extern volatile uint8_t debug_last_byte;
         
-        // デバッグ出力 - テスト中は無効化（リアルタイム性優先）
-        #if 0  // デバッグ出力を完全無効化
-        extern volatile uint8_t debug_byte1;
-        extern volatile uint32_t debug_byte1_ng_count;
-        extern volatile uint32_t debug_isr_call_count;  // ISR呼び出し回数
-        extern volatile uint32_t debug_iidx_value;      // 最後のiidx値
-        extern volatile uint32_t debug_fifo_empty_count; // FIFO空判定回数
-        extern volatile uint32_t debug_uart_stat_value;  // UART STAT値
-        extern volatile uint32_t debug_rxdata_raw_value; // RXDATA生値
-        static systick_t last_debug_time = 0;
-        static uint32_t debug_output_counter = 0;
-        systick_t current_time = get_systick_count_ms();
-        if ((current_time - last_debug_time) >= 200) {  // 200msごとに変更（負荷軽減）
-            debug_output_counter++;
-            extern volatile uint32_t debug_overrun_count;
-            extern volatile uint32_t debug_framing_error_count;
-            printf("[DBG] isr=%lu, iidx=0x%lX, rx=%lu, cmp=%lu, rdy=%d, last=0x%02X, b1=0x%02X, fifo_e=%lu\n",
-                   (unsigned long)debug_isr_call_count,
-                   (unsigned long)debug_iidx_value,
-                   (unsigned long)debug_rx_count,
-                   (unsigned long)debug_complete_count,
-                   rx_complete_ready,
-                   debug_last_byte,
-                   debug_byte1,
-                   (unsigned long)debug_fifo_empty_count);
-            printf("[DBG] STAT=0x%08lX, RXDATA=0x%08lX, sync_rst=%lu, OVERRUN=%lu, FRM_ERR=%lu\n",
-                   (unsigned long)debug_uart_stat_value,
-                   (unsigned long)debug_rxdata_raw_value,
-                   (unsigned long)debug_sync_reset_count,
-                   (unsigned long)debug_overrun_count,
-                   (unsigned long)debug_framing_error_count);
-            NVIC_EnableIRQ(UART0_INT_IRQn);  // printf()完了後、割り込み再有効化
-            
-            // 5秒ごとにUART STATレジスタを表示（より詳細な診断）
-            if (debug_output_counter % 50 == 0) {
-                NVIC_DisableIRQ(UART0_INT_IRQn);  // printf()前に割り込み無効化
-                uint32_t uart_stat = S2A_UART_INST->STAT;
-                printf("[UART_STAT] 0x%08lX (RXOE=%d, RXFE=%d, BUSY=%d, IDLE=%d)\n",
-                       (unsigned long)uart_stat,
-                       (uart_stat & (1 << 11)) ? 1 : 0,  // bit11: RX Overrun Error
-                       (uart_stat & (1 << 10)) ? 1 : 0,  // bit10: RX Framing Error
-                       (uart_stat & (1 << 7)) ? 1 : 0,   // bit7: UART Busy
-                       (uart_stat & (1 << 1)) ? 1 : 0);  // bit1: UART Idle
-                NVIC_EnableIRQ(UART0_INT_IRQn);  // printf()完了後、割り込み再有効化
-            }
-            last_debug_time = current_time;
-        }
-        #endif  // デバッグ出力無効化終了
-        
         if (rx_complete_ready) {
             // フレームを処理（protocol/src/s2a_packet.cの各ハンドラを呼び出し）
             uint8_t header = rx_complete_frame[0];
@@ -554,7 +836,7 @@ void axon_routine_main(void* args) {
                 
                 switch (cmd_id) {
                     case 0x49:  // CHKIRQ - ポート確認シーケンス
-                        // デバッグ出力無効化（リアルタイム性優先）
+                        // デバッグ出力無効化（UART通信安定化のため）
                         #if 0
                         NVIC_DisableIRQ(UART0_INT_IRQn);
                         printf("[CHKIRQ] Received! Header=0x%02X, Len=0x%02X, CmdID=0x%02X\n",
@@ -576,7 +858,28 @@ void axon_routine_main(void* args) {
                         break;
                         
                     case 0x4A:  // SETAXON - AXON設定書き込み
+                        // デバッグ出力無効化（UART通信安定化のため）
+                        #if 0
+                        NVIC_DisableIRQ(UART0_INT_IRQn);
+                        printf("[SETAXON] Received! Header=0x%02X, Len=0x%02X, CmdID=0x%02X\n",
+                               header, length, cmd_id);
+                        NVIC_EnableIRQ(UART0_INT_IRQn);
+                        #endif
                         handled = axon_handle_setaxon(rx_complete_frame);
+                        #if 0
+                        if (handled) {
+                            NVIC_DisableIRQ(UART0_INT_IRQn);
+                            printf("[SETAXON] Handler returned success (ACK sent)\n");
+                            NVIC_EnableIRQ(UART0_INT_IRQn);
+                            // 設定反映成功 - 状態更新
+                            _change_status(&g_axon_state, STATE_NORMAL);
+                            changed = true;
+                        } else {
+                            NVIC_DisableIRQ(UART0_INT_IRQn);
+                            printf("[SETAXON] Handler returned failure\n");
+                            NVIC_EnableIRQ(UART0_INT_IRQn);
+                        }
+                        #endif
                         if (handled) {
                             // 設定反映成功 - 状態更新
                             _change_status(&g_axon_state, STATE_NORMAL);
@@ -643,7 +946,39 @@ void axon_routine_main(void* args) {
             rx_variable_length = 0;
         }
 
-
+        // ==========================================
+        // 面番号重複検出時の自動リトライ処理
+        // ==========================================
+        // SOMA-TG仕様書 7.4 ①準拠:
+        // 「Note over AXON: ❸のGPIO割り込みに戻ってL+1番の指定をリクエスト」
+        // → 重複検出時は自動的に次の番号(L+1)をATIRQで送信
+        
+        static systick_t retry_last_send_time = 0;
+        systick_t retry_current_time = get_systick_count_ms();
+        
+        if (g_retry_pending && !g_irq_pulse_pending) {
+            // リトライ間隔チェック（100ms以上経過）
+            if ((retry_current_time - retry_last_send_time) >= AUTO_RETRY_INTERVAL_MS) {
+                // デバッグ出力: 自動リトライ実行
+                uint32_t log_sec = retry_current_time / 1000;
+                printf("[%02lu:%02lu:%02lu.%03lu][AUTO_RETRY] Face duplicate detected, retrying with FACE=%d\n",
+                       (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, 
+                       (unsigned long)(retry_current_time%1000),
+                       g_pending_right_updated ? g_pending_right_amount : g_pending_left_amount);
+                
+                // IRQ_N Low送信（自動リトライ）
+                DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);
+                
+                g_irq_pulse_start_time = retry_current_time;
+                g_irq_pulse_pending = 1;
+                retry_last_send_time = retry_current_time;
+                
+                // 次の番号をATIRQで送信（s2a_packet.cで既にpending値がL+1に更新済み）
+            }
+        }
+        
+        // デバッグログをアイドル時に出力（UART処理完了後）
+        // flush_debug_log();  // 必要に応じてコメント解除
 
         // ==========================================
         // 旧POC用UART受信処理（3バイトパケット）
@@ -711,8 +1046,6 @@ void axon_routine_main(void* args) {
                     status = send_uart_s2a_packet(&s2a_packet);
                     if (status == UART_PACKET_STATUS_SUCCESS) {
                         // ハードウェア制御を更新
-                        _set_amount(g_axon_state.amount);
-                        _set_led_pins(g_axon_state.led_state);
                         _set_solenoid_pins(g_axon_state.sol_state);
 
                         // 状態遷移の処理
@@ -758,13 +1091,16 @@ void axon_routine_main(void* args) {
 #endif  // SOMA_BOARD
 
         // ==========================================
-        // 1ms周期
+        // RGB LED制御（SETAXON経由で制御、ここでは上書きしない）
         // ==========================================
+        // 注: rgb_led_fade_update()は呼ばない（SETAXONのSET_LEDで制御）
+        /*
         if ((period - last_led_update) >= 5) {      // 5msec周期
             // Full Color LED 点灯処理
             last_led_update = period;
             rgb_led_fade_update(selected_color_index, is_fast_blink, period);
         }
+        */
     }
 #endif  // AXON_BOARD
 }

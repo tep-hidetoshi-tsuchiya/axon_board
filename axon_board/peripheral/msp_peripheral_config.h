@@ -194,25 +194,7 @@
 #define ESP32_UART_RX_PF_FUNC                                   (IOMUX_PINCM55_PF_UART3_RX)
 #define ESP32_UART_RX_PIN                                       (DL_GPIO_PIN_25)
 
-// FRAM
-#define FRAM_SPI_INST                                           (SPI0)
-#define FRAM_SPI_PORT                                           (GPIOA)
-#define FRAM_SPI_INT_IRQn                                       (SPI0_INT_IRQn)
-#define FRAM_SPI_IRQ_HANDLER                                    (SPI0_IRQHandler)
-#define FRAM_SPI_PORT                                           (GPIOA)
-#define FRAM_SPI_INT_IRQn                                       (SPI0_INT_IRQn)
-#define FRAM_SPI_CS_IOMUX                                       (IOMUX_PINCM19)
-#define FRAM_SPI_CS_PF_FUNC                                     (IOMUX_PINCM19_PF_SPI0_CS0)
-#define FRAM_SPI_CS_PIN                                         (DL_GPIO_PIN_8)
-#define FRAM_SPI_SCLK_IOMUX                                     (IOMUX_PINCM34)
-#define FRAM_SPI_SCLK_PF_FUNC                                   (IOMUX_PINCM34_PF_SPI0_SCLK)
-#define FRAM_SPI_SCLK_PIN                                       (DL_GPIO_PIN_12)
-#define FRAM_SPI_SO_IOMUX                                       (IOMUX_PINCM35)
-#define FRAM_SPI_SO_PF_FUNC                                     (IOMUX_PINCM35_PF_SPI0_POCI)
-#define FRAM_SPI_SO_PIN                                         (DL_GPIO_PIN_13)
-#define FRAM_SPI_SI_IOMUX                                       (IOMUX_PINCM36)
-#define FRAM_SPI_SI_PF_FUNC                                     (IOMUX_PINCM36_PF_SPI0_PICO)
-#define FRAM_SPI_SI_PIN                                         (DL_GPIO_PIN_14)
+
 
 // DIPSW
 #define DIPSW_PORT                                              (GPIOB)

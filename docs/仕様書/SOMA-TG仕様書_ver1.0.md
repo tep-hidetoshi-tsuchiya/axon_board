@@ -473,7 +473,7 @@ Table 3-4, フレームフォーマット
 
 
 #### 暗号化方式
-
+◆　暗号化方式：AES-256 ECBモード
 
 データ部は、NISTの推奨規格であるAES-256アルゴリズムにより暗号化されます。AES-128のアルゴリズムは以下のページに公開されています。
 
@@ -587,6 +587,7 @@ T0 = T1 = 1000ms
 
 
 コマンド間のタイムアウト規定は「1000ms」になります。TGとSOMA間のシリアル通信経路に正常に送受信ができない何らかの障害（ノイズ、パケットロス、等）が発生した際に、コマンドのリトライを許容致します。TGはコマンドレスポンスが受信できない場合の同じコマンドの再送を、SOMAはコマンドレスポンスが到達しない場合の同じコマンドの再受信を考慮した設計として下さい。
+リトライ回数は5回までとし、5回リトライしても正常に通信ができない場合は、通信エラーのログを出力して次の処理へ
 
 ---
 
@@ -1814,7 +1815,7 @@ TGはテキスト形式のアップデートコード・ファイルを1行単�
 SOMA基板からのデータACK応答を受信したら、次の行を送信。
 
 
-SOMA基板からデータNAK応答が返った場合、同じ行を再送。
+SOMA基板からデータNACK応答が返った場合、同じ行を再送。
 
 
 最終行まで送信完了したら、エラー確認パケットを送信。
@@ -2032,14 +2033,21 @@ sequenceDiagram
     participant SOMA as SOMA基板
     participant AXON as AXON基板
 
-    Note over SOMA: PORT確認 SEQ<br/>FRAM Table Read<br/>N = 1<br/>FW確認 SEQ<br/>MUX-N 切替
+    loop N = 1 ～ 9 まで
 
-    SOMA->>AXON: [CHKIRQ]AXON詳細情報確認要求
-    Note over AXON: 起動<br/>LED水色：点灯（Default）
 
-    AXON-->>SOMA: [ATIRQ]PORT-N情報（S/N & FW Version）
+        SOMA->>AXON: [CHKIRQ]AXON詳細情報確認要求
+        Note over AXON: 起動
 
-    Note over SOMA: FRAMに保存　PORT N番: 面番号, 金額, S/N, PORT_FLG<br>FW Versionはグローバル変数（RAM）に保存
+        AXON-->>SOMA: [ATIRQ]PORT-N情報（S/N & FW Version）
+
+        Note over SOMA: PORT確認 SEQ<br/>FRAM Table Read
+        Note over SOMA: FRAMに保存　PORT N番: 面番号, 金額, S/N, PORT_FLG<br>FW Versionはグローバル変数（RAM）に保存
+        SOMA->>AXON: [SETAXON]PORT-N番「面番号」&「金額設定」＆「LED 青 点灯」送信
+        Note over AXON: LED水色：点灯（Default）
+
+        AXON-->>SOMA: [ACK/NACK]
+    end
 
     Note over SOMA: 次項へ
     Note over AXON: 次項へ
@@ -2089,7 +2097,7 @@ sequenceDiagram
     Note over R: 7セグLED（点灯）<br/>金額：X 枚
 
     %% --- 左側：面番号変更シーケンスの準備 ---
-    L->>L: 金額ボタン押下
+    L->>L: 面ボタン押下
     Note over L: ボタンが押下された<br/>変更したいのかな？
     Note over L: 長押し：5秒継続
     Note over L: 7セグLED（点滅）<br/>面：L-1 番
@@ -2157,8 +2165,11 @@ sequenceDiagram
       Note over AXON:  ❸のGPIO割り込みに戻ってL+1番の指定をリクエスト
 
   else ②　面番号 L番が他のPORT未使用 ＆ PORT Nにデータがある場合
+      note over SOMA,AXON: 【要確認】どのような場合にデータが存在しているがPORT_FLGが0になるのか？？？<br>　使用していたAXONを抜いた場合？
+
       %% --- 面番号 L番 の使用状況チェック ---
       Note over SOMA: 面番号 “L番” は他のPORTで未使用<br>＆<br>PORT NのTableにはデータあり<br>PORT N : 面番号 X, 金額 Y枚, PORT_FLG 0
+      Note over SOMA: PORT N番 Table更新（FRAM更新）
       SOMA->>AXON: [SETAXON] PORT Nに面番号L、金額設定 Y枚
 
       %% --- AXONの判定処理 ---
@@ -2230,7 +2241,8 @@ sequenceDiagram
     Note over AXON: 7セグLED（点滅） 面：0番 / 金額：0枚
 
     %% --- 注記 ---
-    Note over SOMA,AXON: 面番号「0」は任意のPORTへ割当可能。<br>未登録面番号を管理しやすい。<br>面番号0は常に未使用扱いとし、表示は 0枚。
+    Note over SOMA,AXON: 面番号「0」は任意のPORTへ割当可能。<br>未登録面番号を管理しやすい。<br>面番号0は常に未使用扱いとし、表示は 0枚。<br>また面番号「0」の時は金額ボタンで金額変更は出来ない。<br>（常に「0」枚と表示される）
+
 
 ```
 

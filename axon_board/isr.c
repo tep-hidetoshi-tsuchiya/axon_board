@@ -3,7 +3,6 @@
 
 #include "driver_config.h"
 #include "isr.h"
-#include "peripheral/fram_utils.h"
 #include "event.h"
 #include "soma_uart_test.h"
 #include <string.h>  // memcpy用
@@ -197,24 +196,26 @@ void GROUP1_IRQHandler(void) {
                 case PUSH_SW1_IIDX:
                     // Handle the push switch 1 interrupt
 
-                    // for debug
-                    // pullup
-                    // 1 = pressed
-                    // 0 = not pressed
-                    // g_rotary_event.pressed    = DL_GPIO_readPins(PUSH_SW_PORT, PUSH_SW1_PIN) ? 1U : 0U;
-
-                    pin_val                   = DL_GPIO_readPins(PUSH_SW_PORT, PUSH_SW1_PIN);
-                    // g_rotary_event.pressed    = pin_val ? 1U : 0U;  // demo using by switch
-                    // g_rotary_event.phase_time = current_time;
-
-                    g_button_1_event.pressed    = pin_val ? 1U : 0U;
+                    // pullup configuration (actual hardware behavior)
+                    // non-zero (VCC) = pressed
+                    // 0 (GND) = not pressed
+                    pin_val                     = DL_GPIO_readPins(PUSH_SW_PORT, PUSH_SW1_PIN);
+                    g_button_1_event.pressed    = pin_val ? 1U : 0U;  // pin_val non-zero = pressed
                     g_button_1_event.phase_time = current_time;
+                    
+                    // ISRデバッグログ
+                    printf("[ISR] BUTTON1 interrupt: pin_val=%lu, pressed=%u, time=%lu ms\n",
+                           (unsigned long)pin_val, g_button_1_event.pressed, (unsigned long)current_time);
                     break;
                 case PUSH_SW2_IIDX:
                     // Handle the push switch 2 interrupt
                     pin_val                     = DL_GPIO_readPins(PUSH_SW_PORT, PUSH_SW2_PIN);
-                    g_button_2_event.pressed    = pin_val ? 1U : 0U;
+                    g_button_2_event.pressed    = pin_val ? 1U : 0U;  // pin_val non-zero = pressed
                     g_button_2_event.phase_time = current_time;
+                    
+                    // ISRデバッグログ
+                    printf("[ISR] BUTTON2 interrupt: pin_val=%lu, pressed=%u, time=%lu ms\n",
+                           (unsigned long)pin_val, g_button_2_event.pressed, (unsigned long)current_time);
                     break;
                 default:
                     break;
@@ -339,20 +340,3 @@ void UART2_IRQHandler(void) {
     UARTMSP_interruptHandler((UART_Handle)&UART_config[1]);
 #endif  // CONFIG_UART_COUNT > 1
 }
-
-#ifdef SOMA_BOARD
-void FRAM_SPI_IRQ_HANDLER(void)
-{
-    // Handle SPI Receive interrupt
-    switch (DL_SPI_getPendingInterrupt(FRAM_SPI_INST)) {
-        case DL_SPI_IIDX_RX:    // データ受信完了割り込み
-            /* Read RX FIFO, then increment data to be transmitted */
-            gRxData = DL_SPI_receiveData8(FRAM_SPI_INST);
-            gSpiRxCompFlg = true;    // 受信完了フラグセット
-
-            break;
-        default:
-            break;
-    }
-}
-#endif // SOMA_BOARD

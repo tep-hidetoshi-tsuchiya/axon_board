@@ -89,8 +89,10 @@ protocol/src/s2a_packet.o: ../protocol/src/s2a_packet.c \
  ../peripheral/dipsw_utils.h \
  ../peripheral/peripheral_typedef.h \
  ../peripheral/hw_ver_utils.h \
- ../driver/systick.h ../event.h \
- ../axon_status.h \
+ ../driver/systick.h \
+ ../peripheral/led_utils.h \
+ ../event.h ../axon_status.h \
+ ../debug_log.h \
  ../soma_axon_comm_test.h
 ../protocol/src/s2a_packet.h:
 ../protocol/src/types.h:
@@ -182,6 +184,8 @@ C:/ti/mspm0_sdk_2_06_00_05/source/ti/driverlib/m0p/dl_systick.h:
 ../peripheral/peripheral_typedef.h:
 ../peripheral/hw_ver_utils.h:
 ../driver/systick.h:
+../peripheral/led_utils.h:
 ../event.h:
 ../axon_status.h:
+../debug_log.h:
 ../soma_axon_comm_test.h:

@@ -84,7 +84,11 @@ uint16_t crc16_tep(const uint8_t* data, int len)
         }
     }
     
-    return crc;  // 最終XORなし
+    // ★修正: 最終XOR処理を追加（s2a_packet.cと統一）
+    crc ^= 0xFFFF;
+    
+    // ★修正: バイトスワップ（リトルエンディアン対応）
+    return ((crc & 0xFF) << 8) | ((crc >> 8) & 0xFF);
 }
 
 void soma_uart_init(void)
@@ -179,19 +183,17 @@ bool aes_decrypt_cbc(const uint8_t* encrypted_data, uint8_t* decrypted_data)
 }
 
 /**
- * @brief 任意のパケットをUART送信（汎用関数）
+ * @brief 任意のパケットをUART送信（高速版 - ACK/ATIRQ用）
  * @param data 送信データバッファ
  * @param len 送信データ長
  * @return true: 成功, false: 失敗
+ * @note 仕様書の10ms遅延なし（応答コマンド用）
  */
-bool uart_send_packet(const uint8_t* data, size_t len)
+bool uart_send_packet_fast(const uint8_t* data, size_t len)
 {
     if (data == NULL || len == 0) {
         return false;
     }
-    
-    // 送信前に待機（UARTバッファとレシーバー準備）
-    for (volatile int i = 0; i < 5000; i++);
     
     // UART送信（確実に1バイトずつ送信）
     for (size_t i = 0; i < len; i++) {
@@ -210,6 +212,26 @@ bool uart_send_packet(const uint8_t* data, size_t len)
     }
     
     return true;
+}
+
+/**
+ * @brief 任意のパケットをUART送信（汎用関数）
+ * @param data 送信データバッファ
+ * @param len 送信データ長
+ * @return true: 成功, false: 失敗
+ */
+bool uart_send_packet(const uint8_t* data, size_t len)
+{
+    if (data == NULL || len == 0) {
+        return false;
+    }
+    
+    // ★仕様書準拠: コマンド送信前に10ms遅延（SOMA-AXON仕様書 4.2章）
+    // CPUCLK_FREQ = 32MHz, 10ms = 32MHz × 0.01秒 = 320,000サイクル
+    extern void delay_cycles(uint32_t cycles);
+    delay_cycles(CPUCLK_FREQ / 100);  // 10ms待機
+    
+    return uart_send_packet_fast(data, len);
 }
 
 bool send_ack_frame(void)

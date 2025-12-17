@@ -46,6 +46,7 @@ typedef struct {
     uint8_t  sold_out;
     uint8_t  error_state;
     uint8_t  maint_mode;
+    uint8_t  reset_flag;      // ★追加: リセットフラグ（電源投入/WDTリセット時=1）
     // イベント優先度管理
     uint8_t  event_priority;  // 0=なし, 1=coin, 2=escrow, 3=dial, 4=error
 } axon_status_shared_t;
