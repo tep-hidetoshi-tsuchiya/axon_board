@@ -376,8 +376,8 @@ void soma_check_frame(void)
     // 受信CRC（リトルエンディアン形式）
     uint16_t crc_recv = rx_frame[34] | (rx_frame[35] << 8);
     
-    // 暗号化されたByte[0〜33]に対してCRC計算
-    uint16_t crc_calc = crc16_tep(rx_frame, 34);
+    // ★仕様書準拠: Data部のみ（32バイト）に対してCRC計算
+    uint16_t crc_calc = crc16_tep(&rx_frame[2], 32);  // Byte[2-33]
 
     if (crc_recv != crc_calc) {
         // CRC error → NACKを送信
@@ -487,8 +487,8 @@ bool axon_uart_loopback_test(void)
     for (int i = 2; i < 34; i++) {
         test_tx[i] = (uint8_t)(i - 2);  // 0x00~0x1F
     }
-    // CRC16計算
-    uint16_t crc = crc16_tep(test_tx, 34);
+    // ★仕様書準拠: Data部のみ（32バイト）をCRC計算
+    uint16_t crc = crc16_tep(&test_tx[2], 32);  // Byte[2-33]
     test_tx[34] = crc & 0xFF;        // CRC LSB
     test_tx[35] = (crc >> 8) & 0xFF; // CRC MSB
     
@@ -663,8 +663,8 @@ bool axon_36byte_frame_test(void) {
         test_frame[i] = (uint8_t)(i - 2);
     }
     
-    // CRC16計算（Byte[0-33]に対して）
-    uint16_t crc_calc = crc16_tep(test_frame, 34);
+    // ★仕様書準拠: Data部のみ（32バイト）をCRC計算
+    uint16_t crc_calc = crc16_tep(&test_frame[2], 32);  // Byte[2-33]
     test_frame[34] = crc_calc & 0xFF;         // CRC LSB
     test_frame[35] = (crc_calc >> 8) & 0xFF;  // CRC MSB
     
@@ -803,7 +803,8 @@ bool axon_36byte_frame_test(void) {
         
         // CRC検証
         uint16_t crc_recv = received_frame[34] | (received_frame[35] << 8);
-        uint16_t crc_calc_rx = crc16_tep(received_frame, 34);
+        // ★仕様書準拠: Data部のみ（32バイト）をCRC計算
+        uint16_t crc_calc_rx = crc16_tep(&received_frame[2], 32);  // Byte[2-33]
         
         printf("\n[CRC VALIDATION]\n");
         printf("  Received CRC : 0x%04X\n", crc_recv);

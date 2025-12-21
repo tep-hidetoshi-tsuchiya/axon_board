@@ -337,8 +337,9 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
     }
 
     // 3. CRC16チェック（リトルエンディアン形式で読み取り）
+    // ★仕様書準拠: Data部のみ（32バイト）を計算対象とする
     uint16_t crc_recv = encrypted_frame[34] | (encrypted_frame[35] << 8);
-    uint16_t crc_calc = crc16_tep(encrypted_frame, 34);
+    uint16_t crc_calc = crc16_tep(&encrypted_frame[2], 32);  // Data部のみ（Byte[2-33]）
     debug_crc_recv = crc_recv;
     debug_crc_calc = crc_calc;
     
@@ -532,7 +533,8 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
     // 平文データをそのままコピー（暗号化なし）
     memcpy(&encrypted_packet[2], &atirq_plain, 32);
 
-    uint16_t crc = crc16_tep(encrypted_packet, 34);
+    // ★仕様書準拠: Data部のみ（32バイト）をCRC計算
+    uint16_t crc = crc16_tep(&encrypted_packet[2], 32);  // Data部のみ（Byte[2-33]）
     encrypted_packet[34] = (uint8_t)(crc & 0xFF);         // LSB
     encrypted_packet[35] = (uint8_t)((crc >> 8) & 0xFF);  // MSB
 
@@ -709,8 +711,9 @@ static bool send_ack_frame(void)
     packet.ack.auth_code = 0x0000;
     packet.ack.rnd       = 0x0000;
     
-    // CRC16計算（Header + LEN + データ32バイト）
-    packet.ack.crc16 = crc16_tep((uint8_t*)&packet.ack, 34);
+    // ★仕様書準拠: Data部のみ（32バイト）をCRC計算
+    // ACK構造体のData部開始 = Header(1) + LEN(1) の次 = offset 2
+    packet.ack.crc16 = crc16_tep((uint8_t*)&packet.ack + 2, 32);
     
     // テストモード: ACK送信記録
     axon_test_record_response(0x00);
@@ -761,8 +764,9 @@ static bool send_nack_frame(uint8_t err_code)
     packet.nack.len      = 0x01;
     packet.nack.err_code = err_code;
     
-    // CRC16計算（Header + LEN + ERR_CODE）
-    packet.nack.crc16 = crc16_tep((uint8_t*)&packet.nack, 3);
+    // ★仕様書準拠: Data部のみ（1バイト）をCRC計算
+    // NACK構造体のData部開始 = Header(1) + LEN(1) の次 = offset 2
+    packet.nack.crc16 = crc16_tep((uint8_t*)&packet.nack + 2, 1);  // ERR_CODEのみ
     
     // テストモード: NACK送信記録
     axon_test_record_response(0x90);
@@ -801,8 +805,9 @@ bool axon_handle_setaxon(const uint8_t* encrypted_frame)
     }
 
     // 3. CRC16チェック（リトルエンディアン形式で読み取り）
+    // ★仕様書準拠: Data部のみ（32バイト）を計算対象とする
     uint16_t crc_recv = encrypted_frame[34] | (encrypted_frame[35] << 8);
-    uint16_t crc_calc = crc16_tep(encrypted_frame, 34);
+    uint16_t crc_calc = crc16_tep(&encrypted_frame[2], 32);  // Data部のみ（Byte[2-33]）
     
     if (crc_recv != crc_calc) {
         send_nack_frame(0x04);  // CRC16エラー
@@ -1049,8 +1054,9 @@ bool axon_handle_nop(const uint8_t* encrypted_frame)
     }
 
     // 3. CRC16チェック（リトルエンディアン形式で読み取り）
+    // ★仕様書準拠: Data部のみ（32バイト）を計算対象とする
     uint16_t crc_recv = encrypted_frame[34] | (encrypted_frame[35] << 8);
-    uint16_t crc_calc = crc16_tep(encrypted_frame, 34);
+    uint16_t crc_calc = crc16_tep(&encrypted_frame[2], 32);  // Data部のみ（Byte[2-33]）
     
     if (crc_recv != crc_calc) {
         send_nack_frame(0x04);  // CRC16エラー
@@ -1152,8 +1158,9 @@ bool axon_handle_afwup(const uint8_t* encrypted_frame)
     }
 
     // 3. CRC16チェック（リトルエンディアン形式で読み取り）
+    // ★仕様書準拠: Data部のみ（32バイト）を計算対象とする
     uint16_t crc_recv = encrypted_frame[34] | (encrypted_frame[35] << 8);
-    uint16_t crc_calc = crc16_tep(encrypted_frame, 34);
+    uint16_t crc_calc = crc16_tep(&encrypted_frame[2], 32);  // Data部のみ（Byte[2-33]）
     
     if (crc_recv != crc_calc) {
         send_nack_frame(0x04);  // CRC16エラー
@@ -1213,8 +1220,9 @@ bool axon_handle_axonrbt(const uint8_t* encrypted_frame)
     }
 
     // 3. CRC16チェック（リトルエンディアン形式で読み取り）
+    // ★仕様書準拠: Data部のみ（32バイト）を計算対象とする
     uint16_t crc_recv = encrypted_frame[34] | (encrypted_frame[35] << 8);
-    uint16_t crc_calc = crc16_tep(encrypted_frame, 34);
+    uint16_t crc_calc = crc16_tep(&encrypted_frame[2], 32);  // Data部のみ（Byte[2-33]）
     
     if (crc_recv != crc_calc) {
         send_nack_frame(0x04);  // CRC16エラー
@@ -1277,8 +1285,9 @@ bool axon_handle_codepkt(const uint8_t* frame)
     }
 
     // 3. CRC16チェック（リトルエンディアン形式で読み取り）
+    // ★仕様書準拠: Data部のみ（36バイト: Address[4] + Code[32]）を計算対象とする
     uint16_t crc_recv = frame[38] | (frame[39] << 8);
-    uint16_t crc_calc = crc16_tep(frame, 38);
+    uint16_t crc_calc = crc16_tep(&frame[2], 36);  // Data部のみ（Byte[2-37]）
     
     if (crc_recv != crc_calc) {
         // CRC NGの場合、CODENG送信
@@ -1289,7 +1298,8 @@ bool axon_handle_codepkt(const uint8_t* frame)
         codeng.len = 0x04;
         // アドレスは受信データから取得（LSB first）
         memcpy(&codeng.address, &frame[2], 4);
-        codeng.crc16 = crc16_tep((uint8_t*)&codeng, 6);
+        // ★Data部のみCRC計算: Address[4]
+        codeng.crc16 = crc16_tep((uint8_t*)&codeng + 2, 4);
         
         return uart_send_packet((uint8_t*)&codeng, sizeof(CODENG_PACKET));
     }
@@ -1329,7 +1339,8 @@ bool axon_handle_codepkt(const uint8_t* frame)
         codeok.header = 0xB4;
         codeok.len = 0x04;
         codeok.address = address;
-        codeok.crc16 = crc16_tep((uint8_t*)&codeok, 6);
+        // ★Data部のみCRC計算: Address[4]
+        codeok.crc16 = crc16_tep((uint8_t*)&codeok + 2, 4);
         
         return uart_send_packet((uint8_t*)&codeok, sizeof(CODEOK_PACKET));
     } else {
@@ -1340,7 +1351,8 @@ bool axon_handle_codepkt(const uint8_t* frame)
         codeng.header = 0xBD;
         codeng.len = 0x04;
         codeng.address = address;
-        codeng.crc16 = crc16_tep((uint8_t*)&codeng, 6);
+        // ★Data部のみCRC計算: Address[4]
+        codeng.crc16 = crc16_tep((uint8_t*)&codeng + 2, 4);
         
         return uart_send_packet((uint8_t*)&codeng, sizeof(CODENG_PACKET));
     }
@@ -1369,8 +1381,9 @@ bool axon_handle_errchk(const uint8_t* frame)
     }
 
     // 3. CRC16チェック（リトルエンディアン形式で読み取り）
+    // ★仕様書準拠: Data部のみ（2バイト: WholeCRC[2]）を計算対象とする
     uint16_t crc_recv = frame[4] | (frame[5] << 8);
-    uint16_t crc_calc = crc16_tep(frame, 4);
+    uint16_t crc_calc = crc16_tep(&frame[2], 2);  // Data部のみ（Byte[2-3]）
     
     if (crc_recv != crc_calc) {
         return false;
@@ -1390,7 +1403,8 @@ bool axon_handle_errchk(const uint8_t* frame)
     codefin.len = 0x04;
     codefin.rx_crc16 = rx_whole_crc;
     codefin.calc_crc16 = calc_whole_crc;
-    codefin.crc16 = crc16_tep((uint8_t*)&codefin, 6);
+    // ★Data部のみCRC計算: RxCRC[2] + CalcCRC[2] = 4バイト
+    codefin.crc16 = crc16_tep((uint8_t*)&codefin + 2, 4);
     
     bool result = uart_send_packet((uint8_t*)&codefin, sizeof(CODEFIN_PACKET));
     
