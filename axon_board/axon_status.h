@@ -3,15 +3,16 @@
 
 #include <stdint.h>
 
-// ATIRQ STATUS bit definitions (Table 4-14準拠、16ビット)
-// bit0: FACE有効フラグ (1=有効)
-// bit1: 売り切れ (1=売り切れ)
-// bit2: 電子マネーソレノイド (1=ON)
-// bit3: 光センサー (1=検知)
-// bit4: 返却ボタン (1=押下)
-// bit5: 現金ブロック (1=ON)
+// ATIRQ STATUS bit definitions (Table 4-16準拠、16ビット)
+// bit[15:8]: ダイヤル回転数カウント（0x00→0xFF循環）
+// bit7: RFU
 // bit6: ドア開閉 (1=開)
-// bit7-15: RFU
+// bit5: 現金ブロック (1=ON)
+// bit4: 返却ボタン (1=押下)
+// bit3: 光センサー (1=検知)
+// bit2: 電子マネーソレノイド (1=ON)
+// bit1: 売り切れ (1=売り切れ)
+// bit0: FACE有効フラグ (1=有効)
 #define STATUS_FACE_VALID_BIT    (1U << 0)  // FACE有効
 #define STATUS_SOLD_OUT_BIT      (1U << 1)  // 売り切れ
 #define STATUS_EMONEY_SOL_BIT    (1U << 2)  // 電子マネーソレノイド
@@ -44,9 +45,11 @@ typedef struct {
     uint8_t  escrow_detected;
     uint8_t  door_open;
     uint8_t  sold_out;
+    uint8_t  connector_det;   // ★追加: INSERT_DET（AXON接続検知、1=接続、0=切断）
     uint8_t  error_state;
     uint8_t  maint_mode;
     uint8_t  reset_flag;      // ★追加: リセットフラグ（電源投入/WDTリセット時=1）
+    uint8_t  dial_rotation_count;  // ★追加: ダイヤル回転数カウント（0-255循環、ATIRQ STATUS bit[15:8]）
     // イベント優先度管理
     uint8_t  event_priority;  // 0=なし, 1=coin, 2=escrow, 3=dial, 4=error
 } axon_status_shared_t;
@@ -96,7 +99,10 @@ static inline uint16_t axon_status_compose_bits(void) {
         status |= STATUS_DOOR_OPEN_BIT;
     }
 
-    // bit7-15: RFU（予約）
+    // bit7: RFU（予約）
+    
+    // bit[15:8]: ダイヤル回転数カウント（新仕様 Table 4-16準拠）
+    status |= ((uint16_t)s->dial_rotation_count) << 8;
 
     return status;
 }

@@ -12,31 +12,32 @@
 | 改訂日付 | 版数 | 内容 |
 |---|---|---|
 | 2025/10/20 | Ver.0.1 | Draft版 |
+| 2025/12/22 | Ver.0.1.1 | 起動シーケンス詳細化、IRQ検出方式追加、ホットプラグ対応記載、リトライ規定の実装詳細追加、電源供給仕様明記 |
 
 ---
 
 **目次**
 
-- 1\. はじめに
-  - 1.1. 目的
-  - 1.2. スコープ
-  - 1.3. 用語と定義
-  - 1.4. 記号と略称
-- 2\. 概要
-  - 2.1. システム構成図
-  - 2.2. ThincaGate – SOMA基板 – AXON基板　概略図
-  - 2.3. AXON基板 – コインメック　概略図
-- 3\. 仕様
-  - 3.1. 接続仕様
-  - 3.2. シリアル通信仕様
-- 4\. コマンド(CMD)仕様
-  - 4.1. CMD一覧
-  - 4.2. コマンド説明
-- 5\. 運用鍵更新
-  - 5.1. 運用鍵更新シーケンス
-- 6\. AXON基板 ファームウェア アップデート
-  - 6.1. FWアップデートシーケンス
-  - 6.2. ファームウェア・コードファイルの形式
+- [1. はじめに](#1-はじめに)
+  - [1.1. 目的](#11-目的)
+  - [1.2. スコープ](#12-スコープ)
+  - [1.3. 用語と定義](#13-用語と定義)
+  - [1.4. 記号と略称](#14-記号と略称)
+- [2. 概要](#2-概要)
+  - [2.1. システム構成図](#21-システム構成図)
+  - [2.2. ThincaGate – SOMA基板 – AXON基板　概略図](#22-thincagate--soma基板--axon基板概略図)
+  - [2.3. AXON基板 – コインメック　概略図](#23-axon基板--コインメック概略図)
+- [3. 仕様](#3-仕様)
+  - [3.1. 接続仕様](#31-接続仕様)
+  - [3.2. シリアル通信仕様](#32-シリアル通信仕様)
+- [4. コマンド(CMD)仕様](#4-コマンドcmd仕様)
+  - [4.1. CMD一覧](#41-cmd一覧)
+  - [4.2. コマンド説明](#42-コマンド説明)
+- [5. 運用鍵更新](#5-運用鍵更新)
+  - [5.1. 運用鍵更新シーケンス](#51-運用鍵更新シーケンス)
+- [6. AXON基板 ファームウェア アップデート](#6-axon基板-ファームウェア-アップデート)
+  - [6.1. FWアップデートシーケンス](#61-fwアップデートシーケンス)
+  - [6.2. ファームウェア・コードファイルの形式](#62-ファームウェアコードファイルの形式)
 
 ---
 
@@ -177,8 +178,8 @@ SOMA基板とAXON基板の２種の基板構成となる。 |
 | ACK | Acknowledgement |
 | RFU | Reserved for Future Use |
 | NACK | Negative Acknowledgement |
-| CPU | Central Proccessing Unit |
-| CRC | Cyclic Redundacy Check |
+| CPU | Central Processing Unit |
+| CRC | Cyclic Redundancy Check |
 | CAN | Controller Area Network |
 |  |  |
 
@@ -248,60 +249,41 @@ Table 3-2, AXON I/Fのピンアサイン情報
 
 | PIN No. | 項目 | 内容 |
 |---|---|---|
-| 1 | ESCRW_DET_NO | 返金ボタン押下検出（ノーマリーオープン：5V PULL-UP）
-0：検出（Lowパルス）
-1：通常状態 |
-| 2 | ESCRW_DET_GND | カプセル排出検出用 マイクロスイッチ用GND |
+| 1 | ESCRW_DET_NO | 返金ボタン押下検出（ノーマリーオープン：5V PULL-UP）<br>0：検出（Lowパルス）<br>1：通常状態 |
+| 2 | ESCRW_DET_GND | 返却ボタン押下検出用 マイクロスイッチ用GND |
 | 3 | COIN_VCC | 硬貨検出用 フォトセンサーVcc（24V/15mA） |
-| 4 | COIN_DET | 硬貨検出（ノーマリーオープン：5V PULL-UP）
-0：検出（Lowパルス）
-1：通常状態 |
+| 4 | COIN_DET | 硬貨検出（ノーマリーオープン：5V PULL-UP）<br>0：検出（Lowパルス）<br>1：通常状態 |
 | 5 | GND | 基板GND |
 | 6 | NC | Non connect |
-| 7 | BLK_VCC | 硬貨用ブロックソレノイド用 Vcc（12V/100mA）
-0：硬貨ブロック
-1：硬貨投入許可 |
-| 8 | BLK_ON | 回転検出（ノーマリーオープン：5V PULL-UP）
-0：検出（50msのLowパルス）
-1：通常状態 |
+| 7 | BLK_VCC | 硬貨用ブロックソレノイド用 Vcc（12V/100mA）<br>0：硬貨ブロック<br>1：硬貨投入許可 |
+| 8 | BLK_ON | 回転検出（ノーマリーオープン：5V PULL-UP）(硬貨用ブロックソレノイド制御出力) <br>0：検出（50msのLowパルス）<br>1：通常状態 |
 | 9 | 3.3V | 電源3.3V |
-| 10 | PORT_DET | PORT利用検出
-0：OPEN
-1：検出 |
-| 11 | ROT_DET_NO | カプセル排出検出（ノーマリーオープン：5V PULL-UP）
-0：検出（Lowパルス）
-1：通常状態 |
+| 10 | PORT_DET | PORT利用検出<br>0：OPEN<br>1：検出 |
+| 11 | ROT_DET_NO | カプセル排出検出（ノーマリーオープン：5V PULL-UP）<br>0：検出（Lowパルス）<br>1：通常状態 |
 | 12 | ROT_DET_GND | カプセル排出検出用 マイクロスイッチ用GND |
-| 13 | SLD_OUT_DET_VCC | 売り切れ検出（オープンコレクタ出力：3.3V PULL-UP）
-0：売り切れ状態（Lowレベル）
-1：通常状態 |
+| 13 | SLD_OUT_DET_VCC | 売り切れ検出（オープンコレクタ出力：3.3V PULL-UP）<br>0：売り切れ状態（Lowレベル）<br>1：通常状態 |
 | 14 | GND | 基板GND |
 | 15 | SOL_VCC | キャッシュレス決済用 ソレノイドVcc（5V/1A供給） |
-| 16 | SOL_ON | キャッシュレス決済用 ソレノイドON
-0：決済未完了
-1：決済完了 |
-| 17 | DOOR_DET | カプセルトイ前面パネル開閉検知
-0：通常状態（CLOSE状態）
-1：解放状態（OPEN状態） |
+| 16 | SOL_ON | キャッシュレス決済用 ソレノイドON<br>0：決済未完了<br>1：決済完了 |
+| 17 | DOOR_DET | カプセルトイ前面パネル開閉検知<br>0：通常状態（CLOSE状態）<br>1：解放状態（OPEN状態） |
 | 18 | GND | 基板GND |
 
 
 AXON I/Fとコインメック間でAXON基板側に搭載されるコネクタは「18ピン」の「S18B-PHDSS(LF)(SN)（JST製）」です。
 
 
-## シリアル通信仕様
+## 3.2シリアル通信仕様
 
-### シリアル通信概要
+### 3.2.1シリアル通信概要
 
 
 SOMAはMUXを変更することで通信対象のAXONに対して任意のタイミングで通信することが出来ます。もしくは、AXONからの割り込み要求信号を契機とし、対象のAXON基板と通信を行います。
 
 
-### UART通信方式
+### 3.2.2 UART通信方式
 
 
-AXONの通信方式の仕様を下記のTable 3-3に示します。TGとSOMA間と同じ仕様になります。
-
+AXONの通信方式の仕様を下記のTable 3-3に示します。TGとSOMA間と同じ仕様になります.
 
 Table 3-3, 通信方式仕様
 
@@ -322,18 +304,14 @@ Table 3-3, 通信方式仕様
 
 
 
-### キャラクタフォーマット
+### 3.2.3キャラクタフォーマット
 
 
 Byteは、SOMAとAXONの間で送受信されます。キャラクタフォーマットは、下記のFigure 3-1の通り、10etuで構成されます。
 
-
-
-
-
-![Figure 3-1](images_axon/figure_04.png)
-
-**Figure 3-1, キャラクタフォーマット**
+| Start Bit | D0 | D1 | D2 | D3 | D4 | D5 | D6 | D7 | Stop Bit |
+|:---------:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--------:|
+| 1 etu | 1 etu | 1 etu | 1 etu | 1 etu | 1 etu | 1 etu | 1 etu | 1 etu | 1 etu |
 
 
 
@@ -347,11 +325,7 @@ Table 3-4, フレームフォーマット
 
 | 1st byte | 2nd byte | 3rd – 34th byte | 35th, 36th byte |
 |---|---|---|---|
-| Header
-(1 byte) | LEN
-(1 byte) | data
-(32 bytes) | CRC16
-(2 byte) |
+| Header(1 byte) | LEN(1 byte) | data(32 bytes) | CRC16(2 byte) |
 | ヘッダ | データ長 | データ部（暗号化対象） | CRC16 |
 
 
@@ -380,6 +354,7 @@ http://csrc.nist.gov/publications/fips/fips197/fips-197.pdf
 
 AXONとSOMAで交換されるパケットのデータ部の暗号化には、2つの暗号鍵が使用されます。
 
+
 ◆　運用鍵：運用鍵設定コマンド以外のパケットの暗号・復号に使用される暗号鍵。
 
 運用鍵設定コマンドで変更可能。ファームウェアの書込み時には
@@ -407,7 +382,22 @@ Default値が設定される。
 
 
 下記のFigure 3-2にSOMAとAXONの起動時のタイミングチャートを示します。
-![alt text](images_axon/image-5.png)
+```
+電源     ┊   RESET   ┊  起動中              ┊  Polling/READY
+ON       ┊           ┊                      ┊
+         ┊           ┊                      ┊
+SOMA: ───┼───────────┼──────────────────────┼─────────────────
+         ┊  [RESET]  ┊   [起動中]           ┊  [Polling]
+         ┊           ┊                      ┊
+         ┊←Treset──→┊                      ┊
+         ┊ (max.1秒) ┊                      ┊
+         ┊           ┊←────Tstartup───────→┊
+         ┊           ┊    (max.10秒)        ┊
+         ┊           ┊                      ┊
+AXON: ───┼───────────┼──────────────────────┼─────────────────
+         ┊  [RESET]  ┊   [起動中]           ┊  [READY]
+         ┊           ┊                      ┊
+```
 Figure 3-2, 起動時のタイミングチャート
 
 
@@ -439,13 +429,136 @@ Table 3-6,起動時のタイミング規定
 
 リセット期間中や起動中はコマンドを送受信できません。
 
+#### 3.2.5. 起動シーケンス
 
+SOMAとAXONの起動時の通信シーケンスを以下に示します。
 
-### 通信タイミング
+```mermaid
+sequenceDiagram
+    participant SOMA
+    participant AXON
+
+    Note over SOMA: 電源投入・システム起動
+    Note over SOMA: - ESP32-C6初期化
+    Note over SOMA: - I2C/UART/GPIO設定
+    Note over SOMA: - FRAM読み込み
+    Note over SOMA: - IOExpander初期化
+    Note over SOMA: - IRQハンドラ起動
+
+    Note over AXON: 電源投入・リセット解除
+    Note over AXON: - MSPM0G3507初期化
+    Note over AXON: - UART0/GPIO/Timer設定
+    Note over AXON: - UART FIFOクリア (500ms)
+    Note over AXON: - 7セグLED初期化
+    Note over AXON: - reset_flag = 1 設定
+
+    AXON->>SOMA: IRQ_N = Low (GPIO割り込み)
+    Note over SOMA: IRQ検出
+    Note over SOMA: - GPIO1割り込み or
+    Note over SOMA: - 50msポーリング検出
+
+    SOMA->>SOMA: MUX切替 (該当PORT選択)
+    SOMA->>AXON: CHKIRQ (0x49)
+    Note over AXON: UART0受信割り込み
+    Note over AXON: - CRC検証
+    Note over AXON: - 復号化
+
+    AXON->>SOMA: ATIRQ (0x6A)
+    Note over AXON: リセット通知
+    Note over AXON: - MD bit7 = 1
+    Note over AXON: - FACE_N, CASH_VLU
+    Note over AXON: - STATUS, S/N, FW_VER
+
+    Note over SOMA: ATIRQ解析
+    Note over SOMA: - リセット検出 (MD bit7=1)
+    Note over SOMA: - FRAM読み出し
+    Note over SOMA: - 保存済み設定取得
+
+    SOMA->>AXON: SETAXON (0x4A)
+    Note over SOMA: 設定値伝搬
+    Note over SOMA: - 面番号
+    Note over SOMA: - 金額
+    Note over SOMA: - LED/Timeout
+
+    Note over AXON: 設定受信
+    Note over AXON: - reset_flag = 0 クリア
+    Note over AXON: - g_cmd_recv_toggle ^= 1
+    Note over AXON: - 7セグLED更新
+
+    AXON->>SOMA: ACK (0x00)
+    Note over AXON: 設定完了
+
+    Note over SOMA,AXON: 通常運用開始
+    Note over SOMA: IRQ監視継続 (50ms周期)
+    Note over AXON: 以降 MD bit7 = 0
+```
+
+Figure 3-3, SOMA-AXON起動シーケンス
+
+**起動シーケンス重要ポイント**
+
+1. **reset_flagの役割**: 電源投入/WDTリセット後、最初のATIRQでSOMAに通知 (MD bit7=1)
+2. **クリアタイミング**: SETAXONコマンド受信時（正常動作確認後）→ reset_flag = 0
+3. **IRQ_N信号**: AXONが起動完了をSOMAに通知 (Active Low)
+4. **UART FIFOクリア**: AXON起動時に500ms遅延読み出しで残留データ除去
+5. **MUX切替**: SOMA側でポート選択後にCHKIRQ送信
+6. **IRQ検出方式**: GPIO1割り込みモード (フォールバック: 50msポーリング)
+7. **ホットプラグ対応**: SOMA起動後にAXON接続した場合でも、ATIRQ受信成功時にPORT_FLG=0→1に自動更新
+8. **電源供給**: AXONの24V電源はSOMAから供給される。ケーブル接続時に同時供給されるため、AXON単独の電源OFF状態は発生しない
+
+#### 3.2.6. IRQ検出とキュー処理
+
+**IRQ検出方式**
+
+SOMA側のIRQ検出は以下の2つの方式を実装しています:
+
+1. **GPIO1割り込みモード** (優先): IOExpander INT信号(GPIO1)の立ち下がりエッジ検出
+2. **ポーリングモード** (フォールバック): 50ms周期でIOExpanderレジスタを読み取り
+
+GPIO1割り込み初期化に失敗した場合、自動的にポーリングモードにフォールバックします。
+
+**IRQキュー処理**
+
+GPIO1割り込みモード時、ISR(割り込みサービスルーチン)で検出したIRQイベントをFreeRTOSキュー(サイズ10)に格納します。
+
+- **キュー満杯時**: 新しいIRQイベントは破棄され、`queue_overflow_count`がインクリメントされます
+- **オーバーフロー影響**:
+  - AXON電源切断中: IRQ信号不安定による大量検出。問題なし
+  - AXON正常動作中: ユーザー操作(コイン投入/回転検出)の取りこぼしリスクあり
+- **処理遅延**: キューに溜まったイベントは順次処理されるため、古いIRQが後から処理される場合あり
+
+**ケーブル切断時の動作**
+
+AXONとの接続ケーブル切断時(=24V電源供給停止時):
+1. IRQ信号が不安定になり、ISRが連続発火
+2. キューが満杯になり、オーバーフローが発生
+3. `process_axon_irq()`でCHKIRQを送信するが、AXONから応答なし
+4. リトライ後、タイムアウトで処理終了
+
+ケーブル再接続時:
+1. キューに残った古いIRQイベント(最大10個)を順次処理
+2. IOExpanderで現在のIRQ状態を確認 → 全てHIGH(=IRQ解除済み)
+3. 各PORTのCHKIRQ送信で、実際にIRQを出しているPORTのみATIRQ応答
+4. リセット検出(MD bit7=1) → SETAXON送信 → 通常運用開始
+
+#### 3.2.7. 通信タイミング
 
 
 下記のFigure 3-3にSOMAとAXONの通信時のタイミングチャートを示します。
-![alt text](image-6.png)
+```
+            ┌────┐          ┊           ┊          ┌────┐
+SOMA:  ─────┤送信├──────────┊───────────┊──────────┤送信├─────
+            └────┘          ┊           ┊          └────┘
+                ┊           ┊           ┊           ┊
+                ┊←───T0────→┊           ┊           ┊
+                ┊           ┊           ┊           ┊
+                ┊           ┌────┐      ┊           ┊
+AXON:  ─────────┊───────────┤送信├──────┊───────────┊─────
+                ┊           └────┘      ┊           ┊
+                ┊           ┊           ┊           ┊
+                ┊           ┊←───T1────→┊           ┊
+                ┊           ┊           ┊           ┊
+```
 Figure 3-3, 通信時のタイミングチャート
 
 
@@ -456,34 +569,46 @@ Table 3-7, CLP端末の状態
 
 | 変数 | 内容 |
 |---|---|
-| T0 | SOMAのコマンド送信完了からAXONのコマンド送信開始までの時間。
-SOMAは、T0までにAXONからのコマンドを受信できるようにして下さい。 |
-| T1 | AXONのコマンド送信完了からSOMAのコマンド送信開始までの時間。
-AXONは、T1までにSOMAからのコマンドを受信できるようにして下さい。 |
+| T0 | SOMAのコマンド送信完了からAXONのコマンド送信開始までの時間。SOMAは、T0までにAXONからのコマンドを受信できるようにして下さい。 |
+| T1 | AXONのコマンド送信完了からSOMAのコマンド送信開始までの時間。AXONは、T1までにSOMAからのコマンドを受信できるようにして下さい。 |
 
 
 AXONは、T0までにSOMAからのコマンドを受信できるようにし、SOMAは、T1までにAXONからのコマンドを受信できるようにして下さい。T0とT1の時間に関しては、下記の通りになります。
-
-
 T0 = 10ms
-
-
 T1 = 10ms
 
-
 SOMAとAXONは、コマンドを送信する場合、10ms以上遅延させた後にコマンドを送信して下さい。また、タイムアウト時間は下記の通りになります。
-
-
 T0 = T1 = 50ms
 
 
 
 
-### リトライ規定
-
+### 3.2.8. リトライ規定
 
 コマンド間のタイムアウト規定は「50ms」になります。SOMAとAXON間のシリアル通信経路に正常に送受信ができない何らかの障害（ノイズ、パケットロス、等）が発生した際に、コマンドのリトライを許容致します。SOMAはコマンドレスポンスが受信できない場合の同じコマンドの再送を、AXONはコマンドレスポンスが到達しない場合の同じコマンドの再受信を考慮した設計として下さい。
-リトライ回数は5回までとし、5回リトライしても正常に通信ができない場合は、通信エラーのログを出力して次の処理へ
+
+**SOMA側実装リトライ仕様** (`src/protocol/src/s2a_packet.h`定義)
+
+- **最大リトライ回数**: 5回 (`S2A_MAX_RETRY_COUNT = 5`)
+- **リトライ間隔**: 50ms (`S2A_RETRY_INTERVAL_MS = 50`)
+- **タイムアウト**: 50ms (`S2A_TIMEOUT_MS = 50`)
+- **IRQポーリング周期**: 50ms (`S2A_IRQ_POLL_INTERVAL_MS = 50`)
+
+**リトライ失敗時の動作**
+
+5回リトライしても正常に通信ができない場合:
+1. エラーログ出力: `PORT X: ATIRQ failed after 5 retries`
+2. MUX無効化: `disable_uart_mux()` で次のPORT処理へ移行
+3. 連続失敗カウント更新: 3回連続失敗時に電源問題の警告ログ出力
+
+**電源問題検出**
+
+連続3回以上CHKIRQに応答がない場合:
+```
+⚠️ PORT X: IRQ detected but no UART response (count: 3/10)
+   → Possible AXON power issue (24V supply missing?)
+   → Check POWER LED status on AXON board
+```
 
 ---
 
@@ -528,17 +653,11 @@ Table 4-2, 共通バイトの内容
 
 | 名称 | Bit | 形式 | 内容 |
 |---|---|---|---|
-| LEN | [0:7] | 平文 | ・データ長
-自身のバイト数とCRC16を含めない自身以降の、データの長さ。（変動値）
-“0x20”：32バイト |
-| DIC | [0:15] | 暗号文 | ・データ整合性チェックデータ（固定値）
-“0x0123” |
-| AuthCode | [0:15] | 〃 | ・認証コード
-AXONが発行するコマンド認証用コード。悪意を持った第三者が、SOMAからのコマンドを読出し、複製したコード列をAXONに送り込んでも無効とする為のコード。SOMAからの正常なコマンド（運用鍵設定コマンドと検査ステート設定コマンドを除く）を受信し、受け付ける度に変更される |
-| RND | [0:15] | 〃 | ・乱数
-16ビット長の乱数、パケット毎に異なる乱数を採用。これにより、平分データが同じでも、暗号化後のテキストは毎回異なる数値になる |
-| CRC16 | [0:15] | 平文 | ・CRC16
-データ部をCRC16演算した結果 |
+| LEN | [0:7] | 平文 | ・データ長<br>自身のバイト数とCRC16を含めない自身以降の、データの長さ。（変動値）<br>“0x20”：32バイト |
+| DIC | [0:15] | 暗号文 | ・データ整合性チェックデータ（固定値）<br>“0x0123” |
+| AuthCode | [0:15] | 〃 | ・認証コード<br>AXONが発行するコマンド認証用コード。悪意を持った第三者が、SOMAからのコマンドを読出し、複製したコード列をAXONに送り込んでも無効とする為のコード。SOMAからの正常なコマンド（運用鍵設定コマンドと検査ステート設定コマンドを除く）を受信し、受け付ける度に変更される |
+| RND | [0:15] | 〃 | ・乱数<br>16ビット長の乱数、パケット毎に異なる乱数を採用。これにより、平分データが同じでも、暗号化後のテキストは毎回異なる数値になる |
+| CRC16 | [0:15] | 平文 | ・CRC16<br>データ部をCRC16演算した結果 |
 
 
 
@@ -722,6 +841,7 @@ Table 4-10, NOPの内容
 
 
 本CHKIRQコマンドは、AXONからの割り込み要求信号を受けた結果、AXONに状態を確認するためのコマンドです。下記のTable 4-13にCHKIRQコマンドのコマンドフォーマットを示します。
+※）AXONからの割り込み要求が、1秒間なかった場合、強制的にIRQの入力を確認すること。
 
 
 暗号対象は「3rd Byte ～ 34th Byte」です。
@@ -829,11 +949,11 @@ Table 4-16, ATIRQの内容
 | MD | 4th | [0:7] | ・モード通知<br><br>**Bit 内容**<br>**7**: ・AXON基板リセットフラグ<br>　　0：通常状態<br>　　1：リセット状態<br>**6**: ・RFU（"0"固定）<br>**5**: ・RFU（"0"固定）<br>**4**: ・コマンド受信状況<br>　　SOMAからのコマンド受信毎にトグル<br>**3**: ・面番号設定中<br>　　※ 7セグLEDは点滅<br>**2**: ・金額設定中<br>　　※7セグLEDは点滅<br>**1**: ・LEFT（金額枚数）ボタン押下状態<br>　　0：通常状態<br>　　1：押下中<br>**0**: ・RIGHT（面）ボタン押下状態<br>　　0：通常状態<br>　　1：押下中 |
 | FACE_N | 5th | [0:7] | ・AXON基板の設定されている面番号 |
 | CASH_VLU | 6th ,7th | [0:15] | ・AXON基板の設定されている金額 |
-| STATUS | 8th ,9th | [0:15] | ・FACE状態通知<br><br>**Bit 内容**<br>**15～7**: ・RFU（"0"固定）<br>**6**: ・ドア開閉状態<br>　　0：通常状態（ドアCLOSE状態）<br>　　1：ドアOPEN状態<br>**5**: ・現金ブロック状態（Latch式）<br>　　0：通常状態<br>　　1：ブロック状態<br>**4**: ・現金返却ボタン押下検出（Latch式）<br>　　0：通常状態<br>　　1：返却ボタン押下状態<br>**3**: ・現金用 光センサー状態（Latch式）<br>　　0：現金投入中<br>　　1：現金なし<br>**2**: ・電子マネー用 ソレノイド状態（Latch式）<br>　　0：ハンドル回転不可<br>　　1：ハンドル回転OK<br>**1**: ・売り切れ検知<br>　　0：販売可能<br>　　1：売り切れ<br>**0**: ・FACEの有効無効検出<br>　　0：本FACE無効 PORT_FLGを0に設定<br>　　1：本FACE有効 PORT_FLGを1に設定 |
+| STATUS | 8th ,9th | [0:15] | ・FACE状態通知<br><br>**Bit 内容**<br>**[15:8]**: ダイヤル回転数カウント<br>　0x00 >   0xFF間を繰り返す<br>**7**: ・RFU（"0"固定）<br>**6**: ・ドア開閉状態<br>　　0：通常状態（ドアCLOSE状態）<br>　　1：ドアOPEN状態<br>**5**: ・現金ブロック状態（Latch式）<br>　　0：通常状態<br>　　1：ブロック状態<br>**4**: ・現金返却ボタン押下検出（Latch式）<br>　　0：通常状態<br>　　1：返却ボタン押下状態<br>**3**: ・現金用 光センサー状態（Latch式）<br>　　0：現金投入中<br>　　1：現金なし<br>**2**: ・電子マネー用 ソレノイド状態（Latch式）<br>　　0：ハンドル回転不可<br>　　1：ハンドル回転OK<br>**1**: ・売り切れ検知<br>　　0：販売可能<br>　　1：売り切れ<br>**0**: ・FACEの有効無効検出<br>　　0：本FACE無効<br>　　1：本FACE有効 |
 | SSN | 10th～15th | [0:47] | ・AXON基板のシリアル番号<br><br>例）25L6200001 ⇒ 0x19_0C_3E_00_03E9<br><br>①製造年（最大値：99）<br>②製造月（A, B, C, D, E, F, G, H, I, J, K, L）<br>　変換：A→1, B→2,  … L→12<br>③製品番号（最大値：99）<br>④オプション（最大値：9）<br>⑤ロット番号（最大値：9999） |
 | AFW_VER | 16th | [0:7] | ・AXON基板のFWバージョン情報 |
 | CHK_LED | 17th | [0:7] | ・指定されたFACE番号のLED状態確認<br><br>例 - 1）0b0001_0111：LED白点灯<br>例 - 2）0b0010_0100：LED青低速点滅<br>例 - 3）0b0000_0111：消灯<br>例 - 4）0b0000_0000：消灯 |
-| CHK_TOUT | 18th | [0:15] | ・電子マネー用 ソレノイドON時間のタイムアウト設定確認<br><br>**注意**: [0:15]と記載されているが、実装は1バイト(0x0〜0xE)で0x0=30秒を想定<br><br>**設定値とタイムアウト時間**:<br>0x0: 30秒 (Default)<br>0x1: 15秒<br>0x2: 20秒<br>0x3: 25秒<br>0x4: 30秒<br>0x5: 35秒<br>0x6: 40秒<br>0x7: 45秒<br>0x8: 50秒<br>0x9: 55秒<br>0xA: 60秒<br>0xB: 90秒<br>0xC: 120秒<br>0xD: 150秒<br>0xE: 無限秒<br>上記以外: 30秒 (異常値) |
+| CHK_TOUT | 18th | [0:7] | ・電子マネー用 ソレノイドON時間のタイムアウト設定確認<br><br>**設定値とタイムアウト時間**:<br>**4,5,6,7:** ・RFU("0"固定)<br><br>**0,1,2,3:**<br>0x0: 30秒 (Default)<br>0x1: 15秒<br>0x2: 20秒<br>0x3: 25秒<br>0x4: 30秒<br>0x5: 35秒<br>0x6: 40秒<br>0x7: 45秒<br>0x8: 50秒<br>0x9: 55秒<br>0xA: 60秒<br>0xB: 90秒<br>0xC: 120秒<br>0xD: 150秒<br>0xE: 無限秒<br>上記以外: 30秒 (異常値) |
 | RFU | 19th ~ 28th | [0:79] | ・RFU（ALL "0” 固定） |
 | DIC | 29th, 30th | [0:15] | データ整合性チェックデータ |
 | AuthCode | 31th, 32th | [0:15] | 認証コード |
@@ -1113,14 +1233,57 @@ TGはSOMA基板からの通常ステート時の通知パケットの受信を�
 
 チャレンジパケットは、SOMA基板にて生成しTGに送られます。SOMA基板は16バイトの乱数を生成、乱数を設定鍵で暗号化、更にヘッダ（"0x11"）とLEN（”0x10”）とCRC16を付加します。
 
+```mermaid
+flowchart LR
+    RND["16バイトの乱数列"]
+    KEY["設定鍵"]
+    ENC(("AES-256 ECBモード<br>暗号化"))
+    PKT["<table><tr><td>Header<br>0x11</td><td>LEN<br>0x10</td><td>暗号化データ</td><td>CRC16</td></tr></table>"]
+    LABEL["チャレンジパケット"]
+
+    RND --> ENC
+    KEY --> ENC
+    ENC --> PKT
+    PKT -.-> LABEL
+
+    style ENC fill:#e0e0e0
+    style PKT fill:#fff,stroke:#000,stroke-width:2px
+    style LABEL fill:none,stroke:none
+```
 
 
 
 
-### レスポンスパケット
+
+### 5.1.3　レスポンスパケット
 
 
 レスポンスパケットは、TGにて生成しSOMA基板に送ります。TGはチャレンジパケットのデータ部を設定鍵にて復号、平文の乱数を取り出します。更に取り出した乱数を新運用鍵にて暗号化、ヘッダ（"0x11"）とLEN（"0x10”）とCRC16を付加します。
+
+```mermaid
+flowchart LR
+    CPKT["チャレンジパケット<br>(暗号化データ)"]
+    KEY1["設定鍵"]
+    DEC(("AES-256 ECBモード<br>復号化"))
+    RND["16バイトの乱数列"]
+    KEY2["新運用鍵"]
+    ENC(("AES-256 ECBモード<br>暗号化"))
+    PKT["<table><tr><td>Header<br>0x11</td><td>LEN<br>0x10</td><td>暗号化データ</td><td>CRC16</td></tr></table>"]
+    LABEL["レスポンスパケット"]
+
+    CPKT --> DEC
+    KEY1 --> DEC
+    DEC --> RND
+    RND --> ENC
+    KEY2 --> ENC
+    ENC --> PKT
+    PKT -.-> LABEL
+
+    style DEC fill:#e0e0e0
+    style ENC fill:#e0e0e0
+    style PKT fill:#fff,stroke:#000,stroke-width:2px
+    style LABEL fill:none,stroke:none
+```
 
 
 チャレンジパケット送出後、3秒以内にレスポンスパケットを受信しない場合タイムアウトとなり、運用鍵更新は中止され、通常動作に戻ります。
@@ -1241,11 +1404,8 @@ Table 6-2, CODEPKTの内容
 |---|---|---|---|
 | Header | 1st | [0:7] | ・コマンド識別子：“0xA5” |
 | LEN | 2nd | [0:7] | ・データ長：”0x24”（36バイト） |
-| Address | 3rd ~ 6th | [0:31] | ・FWアドレス
-FW_CODE部の最初のデータのアドレス（32ビット）。有効範囲は（0xXXXXXXXXから0xXXXXXXXX）、および（0xXXXXXXXX から　0xXXXXXXXX）LSB First。アドレスはTGで管理し、ファームウェアコードに付加する。アドレスが有効範囲以外のコードパケットを送ると、SOMA基板はFWアップデートを中止し通常動作に戻ります |
-| FW_CODE | 7th ~ 38th | [0:255] | ・ファームウェアコード
-常に32バイトで構成。ファームウェアコードが存在しないバイトは0x00で埋める。ファイルのテキストを16進数値に変換し、運用鍵にて暗号化。 |
-| CRC16 | 39th, 40th | [0:15] | CRC16 |
+| Address | 3rd ~ 6th | [0:31] | ・FWアドレス<br>FW_CODE部の最初のデー<br>タのアドレス（32ビッ<br>ト）。有効範囲は（0xXXXXXXXXから<br>0xXXXXXXXX）、および（0xXXXXXXXXから<br>0xXXXXXXXX）LSB First。アドレスはTGで管理し、<br>ファームウェアコードに付加する。アドレスが有効<br>範囲以外のコードパケットを送ると、SOMA基板は<br>FWアップデートを中止し通常動作に戻ります |
+| FW_CODE | 7th ~ 38th | [0:255] | ・ファームウェアコード<br>常に32バイトで構成。ファームウェアコードが存在<br>しないバイトは0x00で埋める。ファイルのテキス<br>トを16進数値に変換し、運用鍵にて暗号化。 |
 
 
 
@@ -1274,8 +1434,7 @@ Table 6-4, CODEOKの内容
 |---|---|---|---|
 | Header | 1st | [0:7] | ・コマンド識別子：“0xB4” |
 | LEN | 2nd | [0:7] | ・データ長：”0x04”（4バイト） |
-| Address | 3rd ~ 6th | [0:31] | ・FWアドレス
-CODEPKTコマンドで受信したFWの対象アドレス |
+| Address | 3rd ~ 6th | [0:31] | ・FWアドレス<br>FW_CODE部の最初のデー<br>タのアドレス（32ビッ<br>ト）。有効範囲は（0xXXXXXXXXから<br>0xXXXXXXXX）、および（0xXXXXXXXXから<br>0xXXXXXXXX）LSB First。アドレスはTGで管理し、<br>ファームウェアコードに付加する。アドレスが有効<br>範囲以外のコードパケットを送ると、SOMA基板は<br>FWアップデートを中止し通常動作に戻ります |
 | CRC16 | 7th, 8th | [0:15] | CRC16 |
 
 
@@ -1303,8 +1462,7 @@ Table 6-6, CODENGの内容
 |---|---|---|---|
 | Header | 1st | [0:7] | ・コマンド識別子：“0xBD” |
 | LEN | 2nd | [0:7] | ・データ長：”0x04”（4バイト） |
-| Address | 3rd ~ 6th | [0:31] | ・FWアドレス
-CODEPKTコマンドで受信したFWの対象アドレス |
+| Address | 3rd ~ 6th | [0:31] | ・FWアドレス<br>FW_CODE部の最初のデータのアドレス（32ビット）。<br>有効範囲は（0xXXXXXXXXから<br>0xXXXXXXXX）、および（0xXXXXXXXXから0xXXXXXXXX）LSB First。<br>アドレスはTGで管理し、ファームウェアコードに付加する。<br>アドレスが有効範囲以外のコードパケットを送ると、SOMA基板は<br>FWアップデートを中止し通常動作に戻ります |
 | CRC16 | 7th, 8th | [0:15] | CRC16 |
 
 
@@ -1334,8 +1492,7 @@ Table 6-8, ERRCHKの内容
 |---|---|---|---|
 | Header | 1st | [0:7] | ・コマンド識別子：“0xC4” |
 | LEN | 2nd | [0:7] | ・データ長：”0x02”（2バイト） |
-| WholeCode CRC16 | 3rd, 4th | [0:15] | ・全FWコードCRC16演算結果
-平分状態のファームウェアコードのCode部のみを、16ビット単位で演算したCRC16の演算結果。 |
+| WholeCode CRC16 | 3rd, 4th | [0:15] | ・全FWコードCRC16演算結果<br>平分状態のファームウェアコードのCode部のみを、16ビット単位で演算したCRC16の演算結果。 |
 | CRC16 | 5th, 6th | [0:15] | CRC16 |
 
 
@@ -1360,9 +1517,7 @@ Table 6-10, CODEFINの内容
 
 | 名称 | Byte | Bit | 内容 |
 |---|---|---|---|
-| RSLT | 1st | [0:7] | ・結果
-“0xD4”：エラー確認OK（エラー無し）
-Others：エラー確認NG（エラー発生） |
+| RSLT | 1st | [0:7] | ・結果<br>"0xD4"：エラー確認OK（エラー無し）<br>Others：エラー確認NG（エラー発生） |
 | LEN | 2nd | [0:7] | ・データ長：”0x04”（4バイト） |
 | RX_CRC16 | 3rd, 4th | [0:15] | エラー確認パケットで受信したCRC16の演算結果。 |
 | CALC_CRC16 | 5th, 6th | [0:15] | AXON基板で演算したCRC16の演算結果。 |

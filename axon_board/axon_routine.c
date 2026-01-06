@@ -94,6 +94,9 @@ volatile uint8_t g_pending_left_updated = 0;   // 1=pending値が更新済み（
 volatile uint8_t g_pending_right_updated = 0;  // 1=pending値が更新済み（ATIRQ送信すべき）
 volatile uint8_t g_retry_pending = 0;          // 1=重複検出リトライ中（新規ボタン押下を抑制）
 
+// ダイヤル回転数カウンタ（ATIRQ STATUS bit[15:8]、0x00→0xFF循環）
+volatile uint8_t g_dial_rotation_count = 0;
+
 // IRQ_N信号制御フラグ（メインループで50msパルス処理）
 static volatile uint8_t g_irq_pulse_pending = 0;  // 1=IRQ_N Lowセット済み、50ms待機→High必要
 static volatile systick_t g_irq_pulse_start_time = 0;  // IRQ_N Low開始時刻
@@ -143,7 +146,7 @@ static inline void _parse_uart_terminal_status_data(const uint8_t data, uint8_t*
 #ifdef AXON_BOARD
 
 static inline void _set_solenoid_pins(const uint8_t state) {
-    // DL_GPIO_writePinsVal(DIAL_LOCK_SOL_PORT, DIAL_LOCK_SOL_PIN, state ? DIAL_LOCK_SOL_PIN : 0);
+    // DL_GPIO_writePinsVal(COIN_SOL_PORT, COIN_SOL_PIN, state ? COIN_SOL_PIN : 0);
     DL_GPIO_writePinsVal(BLOCK_SOL_PORT, BLOCK_SOL_PIN, state ? BLOCK_SOL_PIN : 0);
 }
 
@@ -400,6 +403,49 @@ void axon_routine_main(void* args) {
     uart_s2a_packet_t s2a_packet    = {0};
     uint8_t           notified_inc  = 0;
     systick_t                last_led_update    = 0;  // LED更新用の最終時刻
+    
+    // ========== ソレノイドテスト（300msec毎にON/OFF） ==========
+    #if 0  // テストを有効化する場合は #if 1、無効化する場合は #if 0
+    {
+        systick_t last_toggle_time = 0;
+        uint8_t solenoid_state = 0;
+        
+        printf("\r\n");
+        printf("========================================\r\n");
+        printf("Solenoid Test Mode\r\n");
+        printf("PA7  (BLOCK_SOL)  : Toggle every 300ms\r\n");
+        printf("PA17 (COIN_SOL)   : Toggle every 300ms\r\n");
+        printf("Press Reset to exit\r\n");
+        printf("========================================\r\n");
+        
+        last_toggle_time = get_systick_count_ms();
+        
+        while (1) {
+            systick_t current_time = get_systick_count_ms();
+            
+            // 300msec経過チェック
+            if ((current_time - last_toggle_time) >= 300) {
+                solenoid_state = !solenoid_state;
+                
+                if (solenoid_state) {
+                    DL_GPIO_setPins(BLOCK_SOL_PORT, BLOCK_SOL_PIN);
+                    DL_GPIO_setPins(COIN_SOL_PORT, COIN_SOL_PIN);
+                    printf("[%lu ms] Solenoids ON  (PA7=1, PA17=1)\r\n", (unsigned long)current_time);
+                } else {
+                    DL_GPIO_clearPins(BLOCK_SOL_PORT, BLOCK_SOL_PIN);
+                    DL_GPIO_clearPins(COIN_SOL_PORT, COIN_SOL_PIN);
+                    printf("[%lu ms] Solenoids OFF (PA7=0, PA17=0)\r\n", (unsigned long)current_time);
+                }
+                
+                last_toggle_time = current_time;
+            }
+            
+            // CPUリソース削減のため短時間待機
+            delay_cycles(CPUCLK_FREQ / 1000);  // 1ms待機
+        }
+    }
+    #endif
+    // ========== ソレノイドテスト終了 ==========
 
     // ========== UARTループバックテスト実行 ==========
     // PA10-PA11をショート接続してからテスト実行
@@ -538,6 +584,19 @@ void axon_routine_main(void* args) {
 
     _set_segment_leds(g_axon_state.left_amount, g_axon_state.right_amount);
 
+    // ==========================================
+    // 各スイッチの初期状態を読み取り（起動時の状態同期）
+    // ==========================================
+    // 注: メインループ開始前に現在の物理的な状態を読み取り、
+    //     prev_*_state変数を初期化することで、起動後の最初の状態変化を
+    //     正しく検出できるようにする
+    uint8_t initial_connector_state = DL_GPIO_readPins(CONNECTOR_DET_PORT, CONNECTOR_DET_PIN) ? 0U : 1U;
+    uint8_t initial_soldout_state = DL_GPIO_readPins(SOLDOUT_SW_PORT, SOLDOUT_SW_PIN) ? 0U : 1U;
+    uint8_t initial_door_state = DL_GPIO_readPins(DOOR_OC_DET_PORT, DOOR_OC_DET_PIN) ? 0U : 1U;
+    
+    printf("[INIT] Switch initial states: CONNECTOR=%d, SOLDOUT=%d, DOOR=%d\n",
+           initial_connector_state, initial_soldout_state, initial_door_state);
+
     while (1) {
         // check dial rotation
         if (g_axon_state.status == STATE_SOL_ON) {
@@ -575,7 +634,7 @@ void axon_routine_main(void* args) {
             .event = &g_button_1_event,
             .pending_amount = &g_pending_left_amount,
             .pending_updated = &g_pending_left_updated,
-            .current_amount = &g_axon_state.left_amount,
+            .current_amount = &g_left_amount,  // ★修正: g_axon_state.left_amount -> g_left_amount
             .release_candidate_time = &release_candidate_time1,
             .release_candidate_flag = &release_candidate1,
             .name = "BUTTON1"
@@ -586,7 +645,7 @@ void axon_routine_main(void* args) {
             .event = &g_button_2_event,
             .pending_amount = &g_pending_right_amount,
             .pending_updated = &g_pending_right_updated,
-            .current_amount = &g_axon_state.right_amount,
+            .current_amount = &g_right_amount,  // ★修正: g_axon_state.right_amount -> g_right_amount
             .release_candidate_time = &release_candidate_time2,
             .release_candidate_flag = &release_candidate2,
             .name = "BUTTON2"
@@ -685,41 +744,99 @@ void axon_routine_main(void* args) {
             g_coindet_event.pressed = 0;
         }
 
-        // 売り切れ検知SW
-        if (g_soldout_event.pressed) {
-            // 売り切れ検知時の処理: STATUS bit1をセット、IRQ信号をSOMAに送信
-            g_axon_status_shared.sold_out = 1U;  // STATUS bit1=1 (売り切れ)
+        // INSERT_DET（コネクタ検知/AXON接続検知）
+        // 両エッジ検出: pressed=1でAXON接続、pressed=0でAXON切断
+        static uint8_t prev_connector_state = 0xFF;
+        static uint8_t connector_initialized = 0;
+        
+        // 初回のみ現在の状態で初期化
+        if (!connector_initialized) {
+            prev_connector_state = initial_connector_state;
+            g_connector_event.pressed = initial_connector_state;  // ISRの変数も同期
+            g_axon_status_shared.connector_det = initial_connector_state;
+            connector_initialized = 1;
+        }
+        
+        if (g_connector_event.pressed != prev_connector_state) {
+            uint8_t new_state = g_connector_event.pressed;
+            g_axon_status_shared.connector_det = new_state;  // STATUS bit設定
             
             systick_t log_time = get_systick_count_ms();
             uint32_t log_sec = log_time / 1000;
-            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (Sold out detected)\n",
-                   (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000));
+            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (INSERT_DET %s)\n",
+                   (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000),
+                   new_state ? "Connected" : "Disconnected");
             DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
             
             // IRQ_Nパルス制御をメインループに移管
             g_irq_pulse_start_time = log_time;
             g_irq_pulse_pending = 1;
             
-            g_soldout_event.pressed            = 0;
+            prev_connector_state = new_state;
+            g_connector_event.last_press_time_ms = log_time;
+        }
+
+        // 売り切れ検知SW
+        // 両エッジ検出: pressed=1で売り切れ、pressed=0で売り切れ解除
+        static uint8_t prev_soldout_state = 0xFF;
+        static uint8_t soldout_initialized = 0;
+        
+        // 初回のみ現在の状態で初期化
+        if (!soldout_initialized) {
+            prev_soldout_state = initial_soldout_state;
+            g_soldout_event.pressed = initial_soldout_state;  // ISRの変数も同期
+            g_axon_status_shared.sold_out = initial_soldout_state;
+            soldout_initialized = 1;
+        }
+        
+        if (g_soldout_event.pressed != prev_soldout_state) {
+            uint8_t new_state = g_soldout_event.pressed;
+            g_axon_status_shared.sold_out = new_state;  // STATUS bit1設定
+            
+            systick_t log_time = get_systick_count_ms();
+            uint32_t log_sec = log_time / 1000;
+            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (SOLDOUT %s)\n",
+                   (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000),
+                   new_state ? "ON" : "OFF");
+            DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
+            
+            // IRQ_Nパルス制御をメインループに移管
+            g_irq_pulse_start_time = log_time;
+            g_irq_pulse_pending = 1;
+            
+            prev_soldout_state = new_state;
             g_soldout_event.last_press_time_ms = log_time;
         }
 
         // ドア開閉検知SW
-        if (g_door_event.pressed) {
-            // ドア開閉検知時の処理: STATUS bit6をセット、IRQ信号をSOMAに送信
-            g_axon_status_shared.door_open = 1U;  // STATUS bit6=1 (ドア開)
+        // 両エッジ検出: pressed=1でドア開、pressed=0でドア閉
+        static uint8_t prev_door_state = 0xFF;
+        static uint8_t door_initialized = 0;
+        
+        // 初回のみ現在の状態で初期化
+        if (!door_initialized) {
+            prev_door_state = initial_door_state;
+            g_door_event.pressed = initial_door_state;  // ISRの変数も同期
+            g_axon_status_shared.door_open = initial_door_state;
+            door_initialized = 1;
+        }
+        
+        if (g_door_event.pressed != prev_door_state) {
+            uint8_t new_state = g_door_event.pressed;
+            g_axon_status_shared.door_open = new_state;  // STATUS bit6設定
             
             systick_t log_time = get_systick_count_ms();
             uint32_t log_sec = log_time / 1000;
-            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (Door opened)\n",
-                   (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000));
+            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (DOOR %s)\n",
+                   (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000),
+                   new_state ? "Opened" : "Closed");
             DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
             
             // IRQ_Nパルス制御をメインループに移管
             g_irq_pulse_start_time = log_time;
             g_irq_pulse_pending = 1;
             
-            g_door_event.pressed            = 0;
+            prev_door_state = new_state;
             g_door_event.last_press_time_ms = log_time;
         }
 
@@ -727,6 +844,8 @@ void axon_routine_main(void* args) {
         if (g_rotary_event.pressed) {
             // ダイヤル回転検知時の処理: Latch、IRQ信号をSOMAに送信
             axon_status_latch_dial();  // 内部状態にダイヤル回転をラッチ
+            g_dial_rotation_count++;   // カウンタインクリメント（0xFF→0x00へ自動ラップアラウンド）
+            g_axon_status_shared.dial_rotation_count = g_dial_rotation_count;
             
             systick_t log_time = get_systick_count_ms();
             uint32_t log_sec = log_time / 1000;

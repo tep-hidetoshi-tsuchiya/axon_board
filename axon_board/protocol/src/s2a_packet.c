@@ -187,11 +187,12 @@ static uint32_t g_fw_last_address = 0;   // 最後に受信したアドレス
 /**
  * @brief DIC値を生成（シリアル番号ベース）
  * @return DIC値（16bit）
- * @details シリアル番号の下位2バイトをDICとして使用
+ * @details 固定値0x0123を使用（[28]=0x01, [29]=0x23の順で送信）
  *          複数AXON基板の識別に使用
+ *          リトルエンディアンシステムで[28]=0x01, [29]=0x23となるよう0x2301を返す
  */
 static inline uint16_t generate_dic_from_serial(void) {
-    return (uint16_t)(axon_serial_number[4] | (axon_serial_number[5] << 8));
+    return 0x2301;  // リトルエンディアンで[28]=0x01, [29]=0x23と送信される
 }
 
 // デバッグ変数（外部から参照可能）
@@ -457,15 +458,16 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
     uint16_t cash_to_send = g_pending_left_updated ? g_pending_left_amount : g_left_amount;
     atirq_plain.cash_vlu = cash_to_send;
     
-    // STATUS: 16bitステータスフィールド（Table 4-14準拠）
-    //   bit0: FACE有効無効 (0=無効, 1=有効)
-    //   bit1: 売り切れ検知 (0=販売可能, 1=売り切れ)
-    //   bit2: 電子マネーソレノイド (0=回転不可, 1=回転OK)
-    //   bit3: 光センサー/現金用 Latch式 (0=現金投入中, 1=現金なし)
-    //   bit4: 返却ボタン押下 (0=通常, 1=押下)
-    //   bit5: 現金ブロック (0=通常, 1=ブロック)
+    // STATUS: 16bitステータスフィールド（Table 4-16準拠）
+    //   bit[15:8]: ダイヤル回転数カウント (0x00→0xFF循環)
+    //   bit7: RFU
     //   bit6: ドア開閉 (0=CLOSE, 1=OPEN)
-    //   bit7-15: RFU
+    //   bit5: 現金ブロック (0=通常, 1=ブロック)
+    //   bit4: 返却ボタン押下 (0=通常, 1=押下)
+    //   bit3: 光センサー/現金用 Latch式 (0=現金投入中, 1=現金なし)
+    //   bit2: 電子マネーソレノイド (0=回転不可, 1=回転OK)
+    //   bit1: 売り切れ検知 (0=販売可能, 1=売り切れ)
+    //   bit0: FACE有効無効 (0=無効, 1=有効)
     atirq_plain.status = axon_status_compose_bits();
     
     // MSN: AXON基板シリアル番号（6バイト）
@@ -652,10 +654,10 @@ static bool aes_encrypt_cbc(const uint8_t* plaintext_data, uint8_t* encrypted_da
  *          式：X^16+X^12+X^5+1
  *          初期値：0xFFFF
  *          演算方向：LSBファースト
- *          例）データ部が "0x000000" の3バイト時、演算結果は "0xCCC6" となる。
+ *          例）データ部が "0x000000" の3バイト時、演算結果は "0xC6CC" となる。
  * @param data データバッファ
  * @param len データ長
- * @return CRC16値（バイトスワップ済み、SOMA側と互換）
+ * @return CRC16値（バイトスワップなし）
  */
 static uint16_t crc16_tep(const uint8_t* data, size_t len)
 {
@@ -685,9 +687,9 @@ static uint16_t crc16_tep(const uint8_t* data, size_t len)
     // 1. 最終XOR処理
     crc ^= 0xFFFF;
     
-    // 2. バイトスワップ (LSBファーストのため)
-    //    例: 0xC6CC → 0xCCC6
-    return ((crc & 0xFF) << 8) | ((crc >> 8) & 0xFF);
+    // 2. バイトスワップなし（計算結果をそのまま返す）
+    //    例: 0x9fb6 → リトルエンディアンで [34]=0x9f, [35]=0xb6 の順で送信
+    return crc;
 }
 
 /**
@@ -857,10 +859,10 @@ bool axon_handle_setaxon(const uint8_t* encrypted_frame)
     bool cash_block_on = (setaxon->set_sol & 0x10) != 0;
     
     // ソレノイド制御（ダイヤルロック）
-    // 注: DIAL_LOCK_SOL_PORTが定義されている場合に有効化
-    #ifdef DIAL_LOCK_SOL_PORT
-    DL_GPIO_writePinsVal(DIAL_LOCK_SOL_PORT, DIAL_LOCK_SOL_PIN, 
-                         sol_on ? DIAL_LOCK_SOL_PIN : 0);
+    // 注: COIN_SOL_PORTが定義されている場合に有効化
+    #ifdef COIN_SOL_PORT
+    DL_GPIO_writePinsVal(COIN_SOL_PORT, COIN_SOL_PIN, 
+                         sol_on ? COIN_SOL_PIN : 0);
     #endif
     
     // 現金ブロックソレノイド制御

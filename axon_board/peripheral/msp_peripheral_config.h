@@ -329,10 +329,10 @@
 #define SOLDOUT_SW_IIDX                                         (DL_GPIO_IIDX_DIO16)
 #define SOLDOUT_SW_EDGE_RISE_FALL                               (DL_GPIO_PIN_16_EDGE_RISE_FALL)
 
-// DIAL LOCK SOLENOID(仮想現金)
-#define DIAL_LOCK_SOL_PORT                                      (GPIOA)
-#define DIAL_LOCK_SOL_IOMUX                                     (IOMUX_PINCM39)
-#define DIAL_LOCK_SOL_PIN                                       (DL_GPIO_PIN_17)
+// COIN SOLENOID (コインソレノイド)
+#define COIN_SOL_PORT                                           (GPIOA)
+#define COIN_SOL_IOMUX                                          (IOMUX_PINCM39)
+#define COIN_SOL_PIN                                            (DL_GPIO_PIN_17)
 
 // GPIO RESERVE
 #define DOOR_OC_DET_PORT                                        (GPIOA)

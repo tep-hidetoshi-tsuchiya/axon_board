@@ -513,11 +513,11 @@ void SYSCFG_DL_GPIO_init(void) {
     DL_GPIO_enableOutput(BLOCK_SOL_PORT, BLOCK_SOL_PIN);
     DL_GPIO_clearPins(BLOCK_SOL_PORT, BLOCK_SOL_PIN);
 
-    // dial lock solenoid
-    DL_GPIO_initDigitalOutputFeatures(DIAL_LOCK_SOL_IOMUX, DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
+    // coin solenoid
+    DL_GPIO_initDigitalOutputFeatures(COIN_SOL_IOMUX, DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
                                       DL_GPIO_DRIVE_STRENGTH_LOW, DL_GPIO_HIZ_DISABLE);
-    DL_GPIO_enableOutput(DIAL_LOCK_SOL_PORT, DIAL_LOCK_SOL_PIN);
-    DL_GPIO_clearPins(DIAL_LOCK_SOL_PORT, DIAL_LOCK_SOL_PIN);
+    DL_GPIO_enableOutput(COIN_SOL_PORT, COIN_SOL_PIN);
+    DL_GPIO_clearPins(COIN_SOL_PORT, COIN_SOL_PIN);
 
     // door open close detect
     DL_GPIO_initDigitalInputFeatures(DOOR_OC_DET_IOMUX, DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,

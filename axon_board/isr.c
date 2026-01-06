@@ -172,10 +172,15 @@ void GROUP1_IRQHandler(void) {
                     // Handle the dial switch interrupt
 
                     // pullup
-                    // 1 = pressed
-                    // 0 = not pressed
-                    g_rotary_event.pressed    = DL_GPIO_readPins(DIAL_SW_PORT, DIAL_SW_PIN) ? 0U : 1U;
+                    // 1 = not pressed (VCC)
+                    // 0 = pressed (GND)
+                    pin_val                   = DL_GPIO_readPins(DIAL_SW_PORT, DIAL_SW_PIN);
+                    g_rotary_event.pressed    = pin_val ? 0U : 1U;  // pin_val=0 → pressed=1
                     g_rotary_event.phase_time = current_time;
+                    
+                    // ISRデバッグログ
+                    printf("[ISR] DIAL_SW interrupt: pin_val=%lu, pressed=%u, time=%lu ms\n",
+                           (unsigned long)pin_val, g_rotary_event.pressed, (unsigned long)current_time);
                     break;
                 case DOOR_OC_DET_IIDX:
                     // Handle the door open/close detect interrupt
