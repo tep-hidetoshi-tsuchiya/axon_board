@@ -97,9 +97,9 @@ volatile uint8_t g_retry_pending = 0;          // 1=重複検出リトライ中�
 // ダイヤル回転数カウンタ（ATIRQ STATUS bit[15:8]、0x00→0xFF循環）
 volatile uint8_t g_dial_rotation_count = 0;
 
-// IRQ_N信号制御フラグ（メインループで50msパルス処理）
-static volatile uint8_t g_irq_pulse_pending = 0;  // 1=IRQ_N Lowセット済み、50ms待機→High必要
-static volatile systick_t g_irq_pulse_start_time = 0;  // IRQ_N Low開始時刻
+// IRQ_N信号制御フラグ（CHKIRQ受信でHighへ戻す／互換用）
+volatile uint8_t g_irq_pulse_pending = 0;      // 他ファイルから参照されるためstaticを外す
+volatile systick_t g_irq_pulse_start_time = 0;  // 同上
 
 // AXON状態管理（protocol/src/s2a_packet.cから参照）
 axon_status_t g_axon_state = {0};
@@ -569,6 +569,18 @@ void axon_routine_main(void* args) {
     _change_status(&g_axon_state, STATE_NOTIFY);
     DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, UART_IRQ_OUT_PIN);
 
+    // 起動直後にSOMAへ通知するためIRQ_NをLowに落とす（CHKIRQ受信でHighへ戻す）
+    {
+        systick_t init_time = get_systick_count_ms();
+        uint32_t  init_sec  = init_time / 1000U;
+        printf("[%02u:%02u:%02u.%03u][IRQ_SIGNAL] High -> Low (boot notify)\n",
+               (unsigned int)((init_sec / 3600U) % 24U),
+               (unsigned int)((init_sec / 60U) % 60U),
+               (unsigned int)(init_sec % 60U),
+               (unsigned int)(init_time % 1000U));
+        DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
+    }
+
     // ATIRQ送信用の一時変数を現在値で初期化（起動時）
     g_pending_left_amount = g_left_amount;
     g_pending_right_amount = g_right_amount;
@@ -901,25 +913,7 @@ void axon_routine_main(void* args) {
             _set_segment_leds(g_axon_state.left_amount, g_axon_state.right_amount);
         }
 
-        // ==========================================
-        // IRQ_N 50msパルス制御（メインループ処理）
-        // ==========================================
-        // ボタン押下やイベント発生時にIRQ_N Lowにセットし、50ms後にHighに戻す
-        // delay_cycles()を使わず、メインループで時間経過をチェック
-        // 注: UART処理の直前に配置し、IRQ_N信号を速やかにHighに戻す
-        if (g_irq_pulse_pending) {
-            systick_t current_time = get_systick_count_ms();
-            if ((current_time - g_irq_pulse_start_time) >= 50) {
-                // 50ms経過 → IRQ_N Highに戻す
-                DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, UART_IRQ_OUT_PIN);
-                g_irq_pulse_pending = 0;
-                
-                uint32_t log_sec = current_time / 1000;
-                printf("[%02u:%02u:%02u.%03u][IRQ_SIGNAL] Low -> High (50ms pulse completed)\n",
-                       (unsigned int)((log_sec/3600)%24), (unsigned int)((log_sec/60)%60),
-                       (unsigned int)(log_sec%60), (unsigned int)(current_time%1000));
-            }
-        }
+        // IRQ_NはCHKIRQ受信時にclear_irq_signal()からHighへ戻す（50msパルス制御は廃止）
 
         // ==========================================
         // SOMA UARTテスト: フレームチェック

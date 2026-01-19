@@ -32,6 +32,8 @@ extern volatile uint8_t g_pending_right_amount;  // ATIRQ送信用（ボタン�
 extern volatile uint8_t g_pending_left_updated;  // pending値更新フラグ
 extern volatile uint8_t g_pending_right_updated; // pending値更新フラグ
 extern volatile uint8_t g_retry_pending;         // 重複検出リトライ中フラグ
+extern volatile uint8_t g_irq_pulse_pending;     // IRQ_Nパルス状態フラグ（axon_routine.c）
+extern volatile systick_t g_irq_pulse_start_time;  // IRQ_N Low開始時刻
 
 // 重複検出時のIRQ再送要求フラグ（メインループで処理）
 volatile uint8_t g_retry_irq_request = 0;
@@ -385,6 +387,11 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
     // CMD ID検証OK: 黄色LED短め点滅
     // CMD ID検証OK: ログ化（黄色LED短め点滅をログで代替）
     debug_led_event_count++;
+
+        // CHKIRQ受信をトリガにIRQ_NをHighへ戻す（SOMA側の受信を完了させるため）
+        g_irq_pulse_pending = 0;
+        g_irq_pulse_start_time = 0;
+        clear_irq_signal();
 
     // 6. ATIRQ平文データ（32バイト）を仕様準拠structで構築
     ATIRQ_PLAIN32 atirq_plain;

@@ -127,7 +127,7 @@
 
 #### 6.2.3. [平文対象] コード受信NGレスポンス（CODENG）【AXON ⇒ SOMA】
 
-#### 6.2.4. [平文対象] エラー確認コマンド（ERRCHK）【AXON ⇒ SOMA】
+#### 6.2.4. [平文対象] エラー確認コマンド（ERRCHK）【SOMA ⇒ AXON】
 
 #### 6.2.5. [平文対象] コード完了レスポンス（CODEFIN）【AXON ⇒ SOMA】
 
@@ -621,30 +621,26 @@ T0 = T1 = 50ms
 
 Table 4-1, コマンド一覧
 
-| HD | ID | 名称 | 送信元 | 返信 | 内容 |
-|---|---|---|---|---|---|
-| 汎用レスポンス | 汎用レスポンス | 汎用レスポンス | 汎用レスポンス | 汎用レスポンス | 汎用レスポンス |
-| 0x10 | 0x00 | ACK | AXON | - | 正常レスポンス |
-| 0x90 | 0xXX | NACK | AXON | - | 異常レスポンス |
-| 一般CMD/レスポンス | 一般CMD/レスポンス | 一般CMD/レスポンス | 一般CMD/レスポンス | 一般CMD/レスポンス | 一般CMD/レスポンス |
-| 0x14 | 0x50 | NOP | SOMA | ACK/NACK | No Operationコマンド |
-| 0x14 | 0x49 | CHKIRQ | SOMA | ATIRQ | 割り込み要求確認コマンド |
-| 0x14 | 0x6A | ATIRQ | AXON | - | CHKIRQコマンドレスポンス |
-| 0x14 | 0x4A | SETAXON | SOMA | ACK/NACK | AXON基板設定コマンド |
-| 0x14 | 0x4B | AFWUP | SOMA | ACK/NACK | AXON基板FWアップデートコマンド |
-| 0x15 | - | SETOKEY | SOMA | ACK/NACK | 運用鍵設定コマンド |
-| 再起動CMD/レスポンス | 再起動CMD/レスポンス | 再起動CMD/レスポンス | 再起動CMD/レスポンス | 再起動CMD/レスポンス | 再起動CMD/レスポンス |
-| 0x14 | 0x7F | AXONRBT | SOMA | ACK or NACK | AXON基板再起動コマンド |
-| FWアップデート用 コード送信CMD/レスポンス | FWアップデート用 コード送信CMD/レスポンス | FWアップデート用 コード送信CMD/レスポンス | FWアップデート用 コード送信CMD/レスポンス | FWアップデート用 コード送信CMD/レスポンス | FWアップデート用 コード送信CMD/レスポンス |
-| 0xA5 | - | CODEPKT | SOMA | CDOK or CDNG | コードパケット |
-| 0xB4 | - | CODEOK | AXON | - | コード受信OK |
-| 0xBD | - | CODENG | AXON | - | コード受信NG |
-| 0xC4 | - | ERRCHK | SOMA | CDFIN | エラー確認パケット |
-| 0xD4 | - | CODEFIN | AXON | - | コード完了 |
-
-
-
-
+| HD | ID | 名称 | 送信元 | 返信 | バイト数 | 暗号化 | 内容 |
+|---|---|---|---|---|---|---|---|
+| 汎用レスポンス | 汎用レスポンス | 汎用レスポンス | 汎用レスポンス | 汎用レスポンス | 汎用レスポンス | 汎用レスポンス | 汎用レスポンス |
+| 0x10 | 0x00 | ACK | AXON | - | 36 bytes | 運用鍵 | 正常レスポンス |
+| 0x90 | 0xXX | NACK | AXON | - | 5 bytes | 平文 | 異常レスポンス |
+| 一般CMD/レスポンス | 一般CMD/レスポンス | 一般CMD/レスポンス | 一般CMD/レスポンス | 一般CMD/レスポンス | 一般CMD/レスポンス | 一般CMD/レスポンス | 一般CMD/レスポンス |
+| 0x14 | 0x50 | NOP | SOMA | ACK/NACK | 36 bytes | 運用鍵 | No Operationコマンド |
+| 0x14 | 0x49 | CHKIRQ | SOMA | ATIRQ | 36 bytes | 運用鍵 | 割り込み要求確認コマンド |
+| 0x14 | 0x6A | ATIRQ | AXON | - | 36 bytes | 運用鍵 | CHKIRQコマンドレスポンス |
+| 0x14 | 0x4A | SETAXON | SOMA | ACK/NACK | 36 bytes | 運用鍵 | AXON基板設定コマンド |
+| 0x14 | 0x4B | AFWUP | SOMA | ACK/NACK | 36 bytes | 運用鍵 | AXON基板FWアップデートコマンド |
+| 0x15 | - | SETOKEY | SOMA | ACK/NACK | 34 bytes | 設定鍵 | 運用鍵設定コマンド |
+| 再起動CMD/レスポンス | 再起動CMD/レスポンス | 再起動CMD/レスポンス | 再起動CMD/レスポンス | 再起動CMD/レスポンス | 再起動CMD/レスポンス | 再起動CMD/レスポンス | 再起動CMD/レスポンス |
+| 0x14 | 0x7F | AXONRBT | SOMA | ACK or NACK | 36 bytes | 運用鍵 | AXON基板再起動コマンド |
+| FWアップデート用 コード送信CMD/レスポンス | FWアップデート用 コード送信CMD/レスポンス | FWアップデート用 コード送信CMD/レスポンス | FWアップデート用 コード送信CMD/レスポンス | FWアップデート用 コード送信CMD/レスポンス | FWアップデート用 コード送信CMD/レスポンス | FWアップデート用 コード送信CMD/レスポンス | FWアップデート用 コード送信CMD/レスポンス |
+| 0xA5 | - | CODEPKT | SOMA | CDOK or CDNG | 40 bytes | 運用鍵 | コードパケット |
+| 0xB4 | - | CODEOK | AXON | - | 8 bytes | 平文 | コード受信OK |
+| 0xBD | - | CODENG | AXON | - | 8 bytes | 平文 | コード受信NG |
+| 0xC4 | - | ERRCHK | SOMA | CDFIN | 6 bytes | 平文 | エラー確認パケット |
+| 0xD4 | - | CODEFIN | AXON | - | 8 bytes | 平文 | コード完了 |
 
 また、CMDで共通する「LEN」「DIC」「AuthCode」「RND」「CRC16」の説明をTable 4-2に示します。
 
@@ -949,7 +945,7 @@ Table 4-16, ATIRQの内容
 | MD | 4th | [0:7] | ・モード通知<br><br>**Bit 内容**<br>**7**: ・AXON基板リセットフラグ<br>　　0：通常状態<br>　　1：リセット状態<br>**6**: ・RFU（"0"固定）<br>**5**: ・RFU（"0"固定）<br>**4**: ・コマンド受信状況<br>　　SOMAからのコマンド受信毎にトグル<br>**3**: ・面番号設定中<br>　　※ 7セグLEDは点滅<br>**2**: ・金額設定中<br>　　※7セグLEDは点滅<br>**1**: ・LEFT（金額枚数）ボタン押下状態<br>　　0：通常状態<br>　　1：押下中<br>**0**: ・RIGHT（面）ボタン押下状態<br>　　0：通常状態<br>　　1：押下中 |
 | FACE_N | 5th | [0:7] | ・AXON基板の設定されている面番号 |
 | CASH_VLU | 6th ,7th | [0:15] | ・AXON基板の設定されている金額 |
-| STATUS | 8th ,9th | [0:15] | ・FACE状態通知<br><br>**Bit 内容**<br>**[15:8]**: ダイヤル回転数カウント<br>　0x00 >   0xFF間を繰り返す<br>**7**: ・RFU（"0"固定）<br>**6**: ・ドア開閉状態<br>　　0：通常状態（ドアCLOSE状態）<br>　　1：ドアOPEN状態<br>**5**: ・現金ブロック状態（Latch式）<br>　　0：通常状態<br>　　1：ブロック状態<br>**4**: ・現金返却ボタン押下検出（Latch式）<br>　　0：通常状態<br>　　1：返却ボタン押下状態<br>**3**: ・現金用 光センサー状態（Latch式）<br>　　0：現金投入中<br>　　1：現金なし<br>**2**: ・電子マネー用 ソレノイド状態（Latch式）<br>　　0：ハンドル回転不可<br>　　1：ハンドル回転OK<br>**1**: ・売り切れ検知<br>　　0：販売可能<br>　　1：売り切れ<br>**0**: ・FACEの有効無効検出<br>　　0：本FACE無効<br>　　1：本FACE有効 |
+| STATUS | 8th ,9th | [0:15] | ・FACE状態通知<br><br>**Bit 内容**<br>**[15:8]**: ・ダイヤル回転数カウント<br>**7**:　・ダイヤル回転検知（Latch式）<br>　　0：通常状態<br>　　1：回転検知状態<br>**6**: ・ドア開閉状態<br>　　0：通常状態（ドアCLOSE状態）<br>　　1：ドアOPEN状態<br>**5**: ・現金ブロック状態（Latch式）<br>　　0：通常状態<br>　　1：ブロック状態<br>**4**: ・現金返却ボタン押下検出（Latch式）<br>　　0：通常状態<br>　　1：返却ボタン押下状態<br>**3**: ・現金用 光センサー状態（Latch式）<br>　　0：現金投入中<br>　　1：現金なし<br>**2**: ・電子マネー用 ソレノイド状態（Latch式）<br>　　0：ハンドル回転不可<br>　　1：ハンドル回転OK<br>**1**: ・売り切れ検知<br>　　0：販売可能<br>　　1：売り切れ<br>**0**: ・FACEの有効無効検出<br>　　0：本FACE無効<br>　　1：本FACE有効 |
 | SSN | 10th～15th | [0:47] | ・AXON基板のシリアル番号<br><br>例）25L6200001 ⇒ 0x19_0C_3E_00_03E9<br><br>①製造年（最大値：99）<br>②製造月（A, B, C, D, E, F, G, H, I, J, K, L）<br>　変換：A→1, B→2,  … L→12<br>③製品番号（最大値：99）<br>④オプション（最大値：9）<br>⑤ロット番号（最大値：9999） |
 | AFW_VER | 16th | [0:7] | ・AXON基板のFWバージョン情報 |
 | CHK_LED | 17th | [0:7] | ・指定されたFACE番号のLED状態確認<br><br>例 - 1）0b0001_0111：LED白点灯<br>例 - 2）0b0010_0100：LED青低速点滅<br>例 - 3）0b0000_0111：消灯<br>例 - 4）0b0000_0000：消灯 |
@@ -963,7 +959,7 @@ Table 4-16, ATIRQの内容
 ### 4.2.4. [暗号化対象] AXON基板設定コマンド（SETAXON）【SOMA ⇒ AXON】
 
 
-本SETAXONコマンドは、SOMAからAXONに対して、の選択されたFACEに設定するためのコマンドです。下記のTable 4-17にSETAXONコマンドのコマンドフォーマットを示します。
+本SETAXONコマンドは、SOMAからAXONに対して、の選択されたFACEに設定するためのコマンドです。下記のTable 423にSETAXONコマンドのコマンドフォーマットを示します。電子決済用のソレノイドは、ダイヤル回転後、即座にOFFするため、AXON基板単体でダイヤル回転を検知したらOFFとする。
 
 
 暗号対象は「3rd Byte ～ 34th Byte」です。
@@ -973,7 +969,7 @@ Table 4-17, SETAXONコマンドフォーマット
 
 | 1st Byte | 2nd Byte | 3rd Byte | 4th Byte | 5th Byte | 6th Byte | 7th Byte | 8th Byte | 9th Byte |
 |---|---|---|---|---|---|---|---|---|
-| Header | LEN | ID | FACE_N | SET_SOL | SET_LED | SET_TOUT | RFU | RFU |
+| Header | LEN | ID | FACE_N | SET_PRTS | SET_LED | SET_TOUT | RFU | RFU |
 | [0:7] | [0:7] | [0:7] | [0:7] | [0:7] | [0:7] | [0:7] | [0:167] | [0:167] |
 | 1 byte | 1 byte | 1 byte | 1 byte | 1 byte | 1 byte | 1 byte | 21 byte | 21 byte |
 
@@ -1011,7 +1007,7 @@ Table 4-18, SETAXONの詳細
 | LEN | 2nd | [0:7] | ・データ長：”0x20”（32バイト） |
 | ID | 3rd | [0:7] | ・識別子：”0x4A” |
 | FACE_N | 4th | [0:7] | ・FACE番号指定：”0x01” ～ “0x09” |
-| SET_SOL | 5th | [0:7] | ・指定されたFACE番号のFACE設定<br><br>**Bit 内容**<br>**7**: ・RFU（"0" 固定）<br>**6**: ・RFU（"0" 固定）<br>**5**: ・RFU（"0" 固定）<br>**4**: ・現金ブロックON<br>　　0：ブロックOFF<br>　　1：ブロックON<br>**3**: ・RFU（"0" 固定）<br>**2**: ・RFU（"0" 固定）<br>**1**: ・RFU（"0" 固定）<br>**0**: ・電子マネー用 ソレノイドON<br>　　0：電子マネー用 ソレノイドOFF<br>　　1：電子マネー用 ソレノイドON |
+| SET_PRTS | 5th | [0:7] | ・指定されたFACE番号のFACE設定<br><br>**Bit 内容**<br>**7**: ・RFU（"0" 固定）<br>**6**: ・RFU（"0" 固定）<br>**5**: ・ダイヤル回転検知（Latch式）クリア<br>　　0：状態維持<br>　　1：クリア<br> ・RFU（"0" 固定）<br>**4**: ・現金ブロックON<br>　　0：ブロックOFF<br>　　1：ブロックON<br>**3**: ・現金返却ボタン（Latch式）リセット<br>　　0：状態維持<br>　　1：クリア**2**: ・現金用 光センサー（Latch式）クリア<br>　　0：状態維持<br>　　1：クリア<br>**1**: ・RFU（"0" 固定）<br>**0**: ・RFU（"0" 固定） |
 | SET_LED | 6th | [0:7] | ・指定されたFACE番号のLED設定<br>　（面番号と金額設定の２個のLED状態）<br><br>**Bit 内容**<br>**7**: ・RFU（"0" 固定）<br>**6**,**5**,**4**: ・LED動作設定<br>　　**値　内容**<br>　　0b0000：消灯<br>　　0b0001：点灯<br>　　0b0010：低速点滅（500ms周期）<br>　　0b0011：高速点滅（250ms周期）<br>　　0b0100：蛍光（PWM）点滅<br>　　上記以外：消灯<br>**3**: ・RFU（"0" 固定）<br>**2**: ・LED（青色）設定<br>　　0：LED（青色）無効<br>　　1：LED（青色）有効<br>**1**: ・LED（緑色）設定<br>　　0：LED（緑色）無効<br>　　1：LED（緑色）有効<br>**0**: ・LED（赤色）設定<br>　　0：LED（赤色）無効<br>　　1：LED（赤色）有効<br><br>例 - 1）0b0001_0111：LED白点灯<br>例 - 2）0b0010_0100：LED青低速点滅<br>例 - 3）0b0000_0111：消灯<br>例 - 4）0b0000_0000：消灯 |
 | SET_TOUT | 7th | [0:7] | ・電子マネー用 ソレノイドON時間のタイムアウト設定<br><br>**Bit 内容**<br>**[4:7]**: ・RFU（"0" 固定）<br>**[0:3]**: ・タイムアウト設定<br>　　**値　内容**<br>　　0x0：30秒 (Default)<br>　　0x1：15秒<br>　　0x2：20秒<br>　　0x3：25秒<br>　　0x4：30秒<br>　　0x5：35秒<br>　　0x6：40秒<br>　　0x7：45秒<br>　　0x8：50秒<br>　　0x9：55秒<br>　　0xA：60秒<br>　　0xB：90秒<br>　　0xC：120秒<br>　　0xD：150秒<br>　　0xE：無限秒<br>　　上記以外：30秒 |
 | RFU | 8th, 9th | [0:15] | ・RFU（ALL "0” 固定） |
@@ -1091,24 +1087,17 @@ FWアップデート手順の詳細は「FWアップデート機能」を参照
 
 本SETOKEYコマンドは、AES256の運用鍵を更新するコマンドです。下記のTable 4-21にSETOKEYコマンドのコマンドフォーマットを示します。
 
-> **⚠️ 重大な仕様不整合（2026年1月7日検出）:**
-> 
-> **AES-256では256ビット（32バイト）鍵が必須ですが、現在の仕様では16バイトのみ送信しています。**
-> 
-> **問題点:**
-> - AES-256の仕様: 32バイト鍵が必要
-> - 現在のOKEYフィールド: 16バイト（3rd～18th Byte）
-> - SOMA側実装: `g_aes_key[32]`に16バイトのみコピー、残り16バイトは0x00
-> - セキュリティ影響: 実質的にAES-128相当のセキュリティレベルに低下
-> 
-> **要対応（SOMA-TG間と整合性を保つこと）:**
-> 1. **AES-256を継続**: OKEYを32バイトに拡張（3rd～34th Byte）
-> 2. **AES-128に変更**: 仕様書・実装を「AES-128」に統一
-> 
-> TG→SOMA→AXON全体で鍵長を統一する必要があります。
+> **📝 仕様修正履歴（2026年1月13日）:**
+>
+> **AES-256仕様に準拠し、32バイト鍵に修正しました。**
+>
+> **修正内容:**
+> - LEN: 0x10 (16バイト) → **0x20 (32バイト)**
+> - OKEY: 3rd～18th Byte (16バイト) → **3rd～34th Byte (32バイト)**
+> - TG→SOMA→AXON全体で鍵長を統一
+> - 実装コードと完全一致
 
-
-暗号対象は「3rd Byte ～ 18th Byte」です。
+暗号対象は「3rd Byte ～ 34th Byte」です。
 
 
 Table 4-21, SETOKEYコマンドフォーマット
@@ -1116,15 +1105,26 @@ Table 4-21, SETOKEYコマンドフォーマット
 | 1st Byte | 2nd Byte | 3rd Byte | 4th Byte | 5th Byte | 6th Byte | 7th Byte | 8th Byte | 9th Byte |
 |---|---|---|---|---|---|---|---|---|
 | Header | LEN | OKEY | OKEY | OKEY | OKEY | OKEY | OKEY | OKEY |
-| [0:7] | [0:7] | [0:127] | [0:127] | [0:127] | [0:127] | [0:127] | [0:127] | [0:127] |
-| 1 byte | 1 byte | 16 bytes | 16 bytes | 16 bytes | 16 bytes | 16 bytes | 16 bytes | 16 bytes |
-
+| [0:7] | [0:7] | [0:255] | [0:255] | [0:255] | [0:255] | [0:255] | [0:255] | [0:255] |
+| 1 byte | 1 byte | 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes |
 
 | 10th Byte | 11th Byte | 12th Byte | 13th Byte | 14th Byte | 15th Byte | 16th Byte | 17th Byte | 18th Byte |
 |---|---|---|---|---|---|---|---|---|
 | OKEY | OKEY | OKEY | OKEY | OKEY | OKEY | OKEY | OKEY | OKEY |
-| [0:127] | [0:127] | [0:127] | [0:127] | [0:127] | [0:127] | [0:127] | [0:127] | [0:127] |
-| 16 bytes | 16 bytes | 16 bytes | 16 bytes | 16 bytes | 16 bytes | 16 bytes | 16 bytes | 16 bytes |
+| [0:255] | [0:255] | [0:255] | [0:255] | [0:255] | [0:255] | [0:255] | [0:255] | [0:255] |
+| 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes |
+
+| 19th Byte | 20th Byte | 21th Byte | 22th Byte | 23th Byte | 24th Byte | 25th Byte | 26th Byte | 27th Byte |
+|---|---|---|---|---|---|---|---|---|
+| OKEY | OKEY | OKEY | OKEY | OKEY | OKEY | OKEY | OKEY | OKEY |
+| [0:255] | [0:255] | [0:255] | [0:255] | [0:255] | [0:255] | [0:255] | [0:255] | [0:255] |
+| 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes |
+
+| 28th Byte | 29th Byte | 30th Byte | 31th Byte | 32th Byte | 33th Byte | 34th Byte |
+|---|---|---|---|---|---|---|
+| OKEY | OKEY | OKEY | OKEY | OKEY | OKEY | OKEY |
+| [0:255] | [0:255] | [0:255] | [0:255] | [0:255] | [0:255] | [0:255] |
+| 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes |
 
 
 これらの項目の説明を下記のTable 4-22に示します。
@@ -1135,8 +1135,8 @@ Table 4-22, SETOKEYの内容
 | 名称 | Byte | Bit | 内容 |
 |---|---|---|---|
 | Header | 1st | [0:7] | ・コマンド識別子：“0x15” |
-| LEN | 2nd | [0:7] | ・データ長：”0x10”（16バイト） |
-| OKEY | 3rd ~ 18th | [0:127] | ・新運用鍵（16バイト） |
+| LEN | 2nd | [0:7] | ・データ長："0x20"（32バイト） |
+| OKEY | 3rd ~ 34th | [0:255] | ・新運用鍵（32バイト、AES-256対応） |
 
 
 運用鍵更新手順の詳細は「運用鍵更新機能」を参照
@@ -1421,11 +1421,10 @@ Table 6-6, CODENGの内容
 
 
 
-### [平文対象] エラー確認コマンド（ERRCHK）【AXON ⇒ SOMA】
+### [平文対象] エラー確認コマンド（ERRCHK）【SOMA ⇒ AXON】
 
 
-本ERRCHKコマンドは、FWコードの転送が完了した後、全てのFWコードが正常に受信できたのかを確認するためのコマンドなります。下記のTable 4-39にERRCHKコマンドのフォーマットを示します。
-
+本ERRCHKコマンドは、FWコードの転送が完了した後、全てのFWコードが正常に受信できたのかを確認するためのコマンドなります。下記のTable 4-39にERRCHKコマンドのフォーマットを示します.
 
 Table 6-7, ERRCHKのコマンドフォーマット
 
