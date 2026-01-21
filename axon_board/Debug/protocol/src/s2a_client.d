@@ -1,3 +1,0 @@
-# FIXED
-
-protocol/src/s2a_client.o: ../protocol/src/s2a_client.c

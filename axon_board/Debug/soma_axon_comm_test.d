@@ -1,6 +1,0 @@
-# FIXED
-
-soma_axon_comm_test.o: ../soma_axon_comm_test.c ../soma_axon_comm_test.h \
- ../driver/systick.h
-../soma_axon_comm_test.h:
-../driver/systick.h:

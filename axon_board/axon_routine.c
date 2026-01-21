@@ -355,8 +355,8 @@ static inline void handle_button_release(button_context_t *ctx) {
                         *ctx->pending_amount = (*ctx->current_amount + 1) % 10;
                         *ctx->pending_updated = 1;
                         
-                        // IRQ送信
-                        DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);
+                        // IRQ送信（Active High仕様）
+                        DL_GPIO_setPins(UART_PORT, UART_IRQ_OUT_PIN);
                         
                         g_irq_pulse_start_time = get_systick_count_ms();
                         g_irq_pulse_pending = 1;
@@ -749,9 +749,9 @@ void axon_routine_main(void* args) {
             
             systick_t log_time = get_systick_count_ms();
             uint32_t log_sec = log_time / 1000;
-            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (Escrow detected)\n",
+            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] Low -> High (Escrow detected)\n",
                    (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000));
-            DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
+            DL_GPIO_setPins(UART_PORT, UART_IRQ_OUT_PIN);  // IRQ_N = High (Active)
             
             // IRQ_Nパルス制御をメインループに移管
             g_irq_pulse_start_time = log_time;
@@ -767,9 +767,9 @@ void axon_routine_main(void* args) {
             
             systick_t log_time = get_systick_count_ms();
             uint32_t log_sec = log_time / 1000;
-            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (Coin detected)\n",
+            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] Low -> High (Coin detected)\n",
                    (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000));
-            DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
+            DL_GPIO_setPins(UART_PORT, UART_IRQ_OUT_PIN);  // IRQ_N = High (Active)
             
             // IRQ_Nパルス制御をメインループに移管
             g_irq_pulse_start_time = log_time;
@@ -797,10 +797,10 @@ void axon_routine_main(void* args) {
             
             systick_t log_time = get_systick_count_ms();
             uint32_t log_sec = log_time / 1000;
-            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (INSERT_DET %s)\n",
+            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] Low -> High (INSERT_DET %s)\n",
                    (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000),
                    new_state ? "Connected" : "Disconnected");
-            DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
+            DL_GPIO_setPins(UART_PORT, UART_IRQ_OUT_PIN);  // IRQ_N = High (Active)
             
             // IRQ_Nパルス制御をメインループに移管
             g_irq_pulse_start_time = log_time;
@@ -833,9 +833,9 @@ void axon_routine_main(void* args) {
             printf("[%02lu:%02lu:%02lu.%03lu][SOLDOUT_CHANGE] pressed=%d, new_state=%d, sold_out=%d, GPIO_raw=0x%lX\n",
                    (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000),
                    g_soldout_event.pressed, new_state, g_axon_status_shared.sold_out, (unsigned long)gpio_raw);
-            printf("[IRQ_SIGNAL] High -> Low (SOLDOUT %s)\n",
+            printf("[IRQ_SIGNAL] Low -> High (SOLDOUT %s)\n",
                    new_state ? "ON" : "OFF");
-            DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
+            DL_GPIO_setPins(UART_PORT, UART_IRQ_OUT_PIN);  // IRQ_N = High (Active)
             
             // IRQ_Nパルス制御をメインループに移管
             g_irq_pulse_start_time = log_time;
@@ -864,10 +864,10 @@ void axon_routine_main(void* args) {
             
             systick_t log_time = get_systick_count_ms();
             uint32_t log_sec = log_time / 1000;
-            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (DOOR %s)\n",
+            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] Low -> High (DOOR %s)\n",
                    (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000),
                    new_state ? "Opened" : "Closed");
-            DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
+            DL_GPIO_setPins(UART_PORT, UART_IRQ_OUT_PIN);  // IRQ_N = High (Active)
             
             // IRQ_Nパルス制御をメインループに移管
             g_irq_pulse_start_time = log_time;
@@ -886,9 +886,9 @@ void axon_routine_main(void* args) {
             
             systick_t log_time = get_systick_count_ms();
             uint32_t log_sec = log_time / 1000;
-            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (Dial rotated)\n",
+            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] Low -> High (Dial rotated)\n",
                    (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000));
-            DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
+            DL_GPIO_setPins(UART_PORT, UART_IRQ_OUT_PIN);  // IRQ_N = High (Active)
             
             // IRQ_Nパルス制御をメインループに移管
             g_irq_pulse_start_time = log_time;
@@ -1104,8 +1104,8 @@ void axon_routine_main(void* args) {
                        (unsigned long)(retry_current_time%1000),
                        g_pending_right_updated ? g_pending_right_amount : g_pending_left_amount);
                 
-                // IRQ_N Low送信（自動リトライ）
-                DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);
+                // IRQ_N High送信（自動リトライ、Active High仕様）
+                DL_GPIO_setPins(UART_PORT, UART_IRQ_OUT_PIN);
                 
                 g_irq_pulse_start_time = retry_current_time;
                 g_irq_pulse_pending = 1;
@@ -1151,8 +1151,8 @@ void axon_routine_main(void* args) {
                         _change_status(&g_axon_state, STATE_NORMAL);
                         changed = false;
                         
-                        // IRQ信号を下げる
-                        DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);
+                        // IRQ信号を下げる（クリア、Active High仕様）
+                        DL_GPIO_clearPins(UART_PORT, UART_IRQ_OUT_PIN);
                     }
                     break;
                 }
@@ -1222,9 +1222,9 @@ void axon_routine_main(void* args) {
             notified_time = period;
             changed = false;
 
-            // uart irq enable
+            // uart irq enable (Active High仕様)
             _change_status(&g_axon_state, STATE_NOTIFY);
-            DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, UART_IRQ_OUT_PIN);
+            DL_GPIO_setPins(UART_PORT, UART_IRQ_OUT_PIN);
         }
 #endif  // SOMA_BOARD
 

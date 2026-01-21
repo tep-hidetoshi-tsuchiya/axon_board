@@ -747,8 +747,8 @@ static bool send_ack_frame(void)
 }
 
 /**
- * @brief IRQ信号をクリア（High = 非アクティブ）
- * @details SOMA-AXON通信仕様に基づき、IRQ信号をHighに設定
+ * @brief IRQ信号をクリア（Low = 非アクティブ）
+ * @details SOMA-AXON通信仕様に基づき、IRQ信号をLowに設定（Active High仕様）
  *          - ATIRQ/ACK/NACK送信完了後に呼び出す
  *          - エラー発生時にも呼び出してIRQ信号をクリア
  */
@@ -757,11 +757,11 @@ static void clear_irq_signal(void)
     systick_t t = get_systick_count_ms();
     uint32_t s = t / 1000;
     NVIC_DisableIRQ(UART0_INT_IRQn);
-    printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] Low -> High (cleared)\n",
+    printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (cleared)\n",
            (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000));
     NVIC_EnableIRQ(UART0_INT_IRQn);
     
-    DL_GPIO_setPins(UART_PORT, UART_IRQ_OUT_PIN);
+    DL_GPIO_clearPins(UART_PORT, UART_IRQ_OUT_PIN);
 }
 
 /**
