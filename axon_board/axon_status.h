@@ -4,22 +4,24 @@
 #include <stdint.h>
 
 // ATIRQ STATUS bit definitions (Table 4-16準拠、16ビット)
-// bit[15:8]: ダイヤル回転数カウント（0x00→0xFF循環）
-// bit7: RFU
+// Ver1.0 仕様対応:
+// bit[15:8]: ダイヤル回転数カウント（0x00→0xFF循環、SETAXON bit5でリセット）
+// bit7: ダイヤル回転検知 [Latch式] (1=回転検知、SETAXON bit5でクリア)
 // bit6: ドア開閉 (1=開)
 // bit5: 現金ブロック (1=ON)
-// bit4: 返却ボタン (1=押下)
-// bit3: 光センサー (1=検知)
+// bit4: 返却ボタン [Latch式] (1=押下、SETAXON bit3でクリア)
+// bit3: 光センサー [Latch式] (1=検知、SETAXON bit2でクリア)
 // bit2: 電子マネーソレノイド (1=ON)
 // bit1: 売り切れ (1=売り切れ)
 // bit0: FACE有効フラグ (1=有効)
 #define STATUS_FACE_VALID_BIT    (1U << 0)  // FACE有効
 #define STATUS_SOLD_OUT_BIT      (1U << 1)  // 売り切れ
 #define STATUS_EMONEY_SOL_BIT    (1U << 2)  // 電子マネーソレノイド
-#define STATUS_LIGHT_SENSOR_BIT  (1U << 3)  // 光センサー
-#define STATUS_RETURN_BTN_BIT    (1U << 4)  // 返却ボタン
+#define STATUS_LIGHT_SENSOR_BIT  (1U << 3)  // 光センサー [Latch式]
+#define STATUS_RETURN_BTN_BIT    (1U << 4)  // 返却ボタン [Latch式]
 #define STATUS_CASH_BLOCK_BIT    (1U << 5)  // 現金ブロック
 #define STATUS_DOOR_OPEN_BIT     (1U << 6)  // ドア開閉
+#define STATUS_DIAL_ROTATE_BIT   (1U << 7)  // ダイヤル回転検知 [Latch式] (Ver1.0)
 
 // 内部状態管理用（ATIRQには含まれない）
 #define ROT_DET_BIT     (1U << 0)  // 回転検出（内部用）
@@ -64,8 +66,9 @@ static inline uint16_t axon_status_compose_bits(void) {
     const volatile axon_status_shared_t* s = &g_axon_status_shared;
     uint16_t status = 0U;
 
-    // bit0: FACE有効フラグ（face_numberが0以外なら有効）
-    if (s->face_number > 0) {
+    // bit0: FACE有効フラグ（INSERT_DET/コネクタ接続検出、Table 4-16準拠）
+    // 1=本FACE有効（コネクタ接続）, 0=本FACE無効（コネクタ切断）
+    if (s->connector_det) {
         status |= STATUS_FACE_VALID_BIT;
     }
 
@@ -99,7 +102,10 @@ static inline uint16_t axon_status_compose_bits(void) {
         status |= STATUS_DOOR_OPEN_BIT;
     }
 
-    // bit7: RFU（予約）
+    // bit7: ダイヤル回転検知 [Latch式] (Ver1.0)
+    if (s->dial_rotated) {
+        status |= STATUS_DIAL_ROTATE_BIT;
+    }
     
     // bit[15:8]: ダイヤル回転数カウント（新仕様 Table 4-16準拠）
     status |= ((uint16_t)s->dial_rotation_count) << 8;

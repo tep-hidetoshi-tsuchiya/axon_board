@@ -404,49 +404,64 @@ void axon_routine_main(void* args) {
     uint8_t           notified_inc  = 0;
     systick_t                last_led_update    = 0;  // LED更新用の最終時刻
     
-    // ========== ソレノイドテスト（300msec毎にON/OFF） ==========
+    // ========== LED点滅テスト（500msec毎にON/OFF） ==========
     #if 0  // テストを有効化する場合は #if 1、無効化する場合は #if 0
     {
-        systick_t last_toggle_time = 0;
-        uint8_t solenoid_state = 0;
+        systick_t last_blink_time = 0;
+        uint8_t led_state = 0;
         
         printf("\r\n");
         printf("========================================\r\n");
-        printf("Solenoid Test Mode\r\n");
-        printf("PA7  (BLOCK_SOL)  : Toggle every 300ms\r\n");
-        printf("PA17 (COIN_SOL)   : Toggle every 300ms\r\n");
+        printf("LED Blink Test Mode (500ms interval)\r\n");
+        printf("PA7  (BLK_SOL)  : Orange LED\r\n");
+        printf("PA17 (COIN_SOL) : Blue LED\r\n");
         printf("Press Reset to exit\r\n");
         printf("========================================\r\n");
         
-        last_toggle_time = get_systick_count_ms();
+        // 初期状態: 両方OFF (High=消灯、テスト基板はLow点灯回路)
+        DL_GPIO_writePinsVal(BLOCK_SOL_PORT, BLOCK_SOL_PIN, BLOCK_SOL_PIN);
+        DL_GPIO_writePinsVal(COIN_SOL_PORT, COIN_SOL_PIN, COIN_SOL_PIN);
+        printf("[00:00:00.000] LEDs OFF (BLK_SOL=High, COIN_SOL=High)\r\n");
+        
+        last_blink_time = get_systick_count_ms();
         
         while (1) {
             systick_t current_time = get_systick_count_ms();
             
-            // 300msec経過チェック
-            if ((current_time - last_toggle_time) >= 300) {
-                solenoid_state = !solenoid_state;
+            // 500msec経過チェック
+            if ((current_time - last_blink_time) >= 500) {
+                led_state = !led_state;
                 
-                if (solenoid_state) {
-                    DL_GPIO_setPins(BLOCK_SOL_PORT, BLOCK_SOL_PIN);
-                    DL_GPIO_setPins(COIN_SOL_PORT, COIN_SOL_PIN);
-                    printf("[%lu ms] Solenoids ON  (PA7=1, PA17=1)\r\n", (unsigned long)current_time);
+                if (led_state) {
+                    // ON: Low出力でLED点灯 (テスト基板: Low=点灯)
+                    DL_GPIO_writePinsVal(BLOCK_SOL_PORT, BLOCK_SOL_PIN, 0);
+                    DL_GPIO_writePinsVal(COIN_SOL_PORT, COIN_SOL_PIN, 0);
+                    printf("[%02lu:%02lu:%02lu.%03lu] LEDs ON  (BLK_SOL=Low, COIN_SOL=Low)\r\n",
+                           (unsigned long)(current_time / 3600000),
+                           (unsigned long)((current_time / 60000) % 60),
+                           (unsigned long)((current_time / 1000) % 60),
+                           (unsigned long)(current_time % 1000));
                 } else {
-                    DL_GPIO_clearPins(BLOCK_SOL_PORT, BLOCK_SOL_PIN);
-                    DL_GPIO_clearPins(COIN_SOL_PORT, COIN_SOL_PIN);
-                    printf("[%lu ms] Solenoids OFF (PA7=0, PA17=0)\r\n", (unsigned long)current_time);
+                    // OFF: High出力でLED消灯 (テスト基板: High=消灯)
+                    DL_GPIO_writePinsVal(BLOCK_SOL_PORT, BLOCK_SOL_PIN, BLOCK_SOL_PIN);
+                    DL_GPIO_writePinsVal(COIN_SOL_PORT, COIN_SOL_PIN, COIN_SOL_PIN);
+                    printf("[%02lu:%02lu:%02lu.%03lu] LEDs OFF (BLK_SOL=High, COIN_SOL=High)\r\n",
+                           (unsigned long)(current_time / 3600000),
+                           (unsigned long)((current_time / 60000) % 60),
+                           (unsigned long)((current_time / 1000) % 60),
+                           (unsigned long)(current_time % 1000));
                 }
                 
-                last_toggle_time = current_time;
+                last_blink_time = current_time;
             }
             
             // CPUリソース削減のため短時間待機
-            delay_cycles(CPUCLK_FREQ / 1000);  // 1ms待機
+            delay_cycles(CPUCLK_FREQ / 10000);  // 0.1ms待機
         }
     }
     #endif
-    // ========== ソレノイドテスト終了 ==========
-
+    // ========== LED点滅テスト終了 ==========
+    
     // ========== UARTループバックテスト実行 ==========
     // PA10-PA11をショート接続してからテスト実行
     // 注意: UART初期化はSYSCFG_DL_init()内の_msp_peripheral_uart_init()で完了済み
@@ -602,12 +617,19 @@ void axon_routine_main(void* args) {
     // 注: メインループ開始前に現在の物理的な状態を読み取り、
     //     prev_*_state変数を初期化することで、起動後の最初の状態変化を
     //     正しく検出できるようにする
-    uint8_t initial_connector_state = DL_GPIO_readPins(CONNECTOR_DET_PORT, CONNECTOR_DET_PIN) ? 0U : 1U;
-    uint8_t initial_soldout_state = DL_GPIO_readPins(SOLDOUT_SW_PORT, SOLDOUT_SW_PIN) ? 0U : 1U;
-    uint8_t initial_door_state = DL_GPIO_readPins(DOOR_OC_DET_PORT, DOOR_OC_DET_PIN) ? 0U : 1U;
+    uint32_t connector_raw = DL_GPIO_readPins(CONNECTOR_DET_PORT, CONNECTOR_DET_PIN);
+    uint32_t soldout_raw = DL_GPIO_readPins(SOLDOUT_SW_PORT, SOLDOUT_SW_PIN);
+    uint32_t door_raw = DL_GPIO_readPins(DOOR_OC_DET_PORT, DOOR_OC_DET_PIN);
     
-    printf("[INIT] Switch initial states: CONNECTOR=%d, SOLDOUT=%d, DOOR=%d\n",
-           initial_connector_state, initial_soldout_state, initial_door_state);
+    uint8_t initial_connector_state = connector_raw ? 1U : 0U;  // GPIO値をそのまま設定
+    uint8_t initial_soldout_state = soldout_raw ? 1U : 0U;      // GPIO値をそのまま設定
+    uint8_t initial_door_state = door_raw ? 1U : 0U;            // GPIO値をそのまま設定
+    
+    printf("[INIT] Switch initial states: CONNECTOR=%d, SOLDOUT=%d (raw GPIO=0x%lX, PIN=0x%lX), DOOR=%d\n",
+           initial_connector_state, initial_soldout_state, (unsigned long)soldout_raw, 
+           (unsigned long)SOLDOUT_SW_PIN, initial_door_state);
+    printf("[DEBUG] SOLDOUT_SW_PORT=%p, SOLDOUT_SW_PIN=0x%lX\n", 
+           (void*)SOLDOUT_SW_PORT, (unsigned long)SOLDOUT_SW_PIN);
 
     while (1) {
         // check dial rotation
@@ -807,8 +829,11 @@ void axon_routine_main(void* args) {
             
             systick_t log_time = get_systick_count_ms();
             uint32_t log_sec = log_time / 1000;
-            printf("[%02lu:%02lu:%02lu.%03lu][IRQ_SIGNAL] High -> Low (SOLDOUT %s)\n",
+            uint32_t gpio_raw = DL_GPIO_readPins(SOLDOUT_SW_PORT, SOLDOUT_SW_PIN);
+            printf("[%02lu:%02lu:%02lu.%03lu][SOLDOUT_CHANGE] pressed=%d, new_state=%d, sold_out=%d, GPIO_raw=0x%lX\n",
                    (log_sec/3600)%24, (log_sec/60)%60, log_sec%60, (unsigned long)(log_time%1000),
+                   g_soldout_event.pressed, new_state, g_axon_status_shared.sold_out, (unsigned long)gpio_raw);
+            printf("[IRQ_SIGNAL] High -> Low (SOLDOUT %s)\n",
                    new_state ? "ON" : "OFF");
             DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
             

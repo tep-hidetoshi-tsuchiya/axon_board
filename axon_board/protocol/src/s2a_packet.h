@@ -93,7 +93,15 @@ typedef struct __NOP_PACKET {
     uint16_t crc16;
 } __PACKED NOP_PACKET;
 
+// ============================================================
 // SETAXON - AXON board setting command (HD:0x14, ID:0x4A)
+// ============================================================
+// SET_PRTS bit definitions (Ver1.0)
+#define S2A_SETAXON_PRTS_DIAL_CLEAR      (1 << 5)  // bit5: ダイヤル回転クリア
+#define S2A_SETAXON_PRTS_CASH_BLOCK      (1 << 4)  // bit4: 現金ブロック
+#define S2A_SETAXON_PRTS_COIN_RETURN_RST (1 << 3)  // bit3: 返却ボタンリセット
+#define S2A_SETAXON_PRTS_COIN_SENSOR_RST (1 << 2)  // bit2: 光センサーリセット
+
 // AXON基板設定コマンド
 // SOMA-AXON specification
 typedef struct __SET_AXON_REQ_PACKET {
@@ -101,7 +109,7 @@ typedef struct __SET_AXON_REQ_PACKET {
     uint8_t  len;              // 0x20
     uint8_t  id;               // 0x4A
     uint8_t  face_n;           // FACE番号 (1-9)
-    uint8_t  set_sol;          // ソレノイド/現金ブロック設定
+    uint8_t  set_prts;         // Ver1.0: パーツ制御設定
     uint8_t  set_led;          // LED設定
     uint8_t  set_tout;         // タイムアウト設定
     uint8_t  rfu1[2];          // RFU
@@ -115,10 +123,11 @@ typedef struct __SET_AXON_REQ_PACKET {
 } __PACKED SET_AXON_REQ_PACKET;
 
 // SETAXON平文32バイト（暗号化前）
+// Ver1.0: set_sol → set_prts (パーツ制御統合フィールド)
 typedef struct __attribute__((packed)) {
     uint8_t  id;               // 0x4A
     uint8_t  face_n;           // FACE番号 (1-9)
-    uint8_t  set_sol;          // ソレノイド/現金ブロック設定
+    uint8_t  set_prts;         // パーツ制御設定 (Ver1.0: bit5=Dial Clear, bit4=Cash Block, bit3=Btn Reset, bit2=Sensor Reset)
     uint8_t  set_led;          // LED設定
     uint8_t  set_tout;         // タイムアウト設定
     uint8_t  rfu1[2];          // RFU

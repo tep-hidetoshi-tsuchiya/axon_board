@@ -475,7 +475,22 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
     //   bit2: 電子マネーソレノイド (0=回転不可, 1=回転OK)
     //   bit1: 売り切れ検知 (0=販売可能, 1=売り切れ)
     //   bit0: FACE有効無効 (0=無効, 1=有効)
-    atirq_plain.status = axon_status_compose_bits();
+    uint16_t status = axon_status_compose_bits();
+    atirq_plain.status = status;
+    
+    // ★デバッグ: STATUS生成時の内部状態を表示
+    NVIC_DisableIRQ(UART0_INT_IRQn);
+    printf("[DEBUG_STATUS] sold_out=%d, door_open=%d, block_solenoid_on=%d, escrow_detected=%d\n",
+           g_axon_status_shared.sold_out, g_axon_status_shared.door_open, 
+           g_axon_status_shared.block_solenoid_on, g_axon_status_shared.escrow_detected);
+    printf("[DEBUG_STATUS] coin_detected=%d, solenoid_on=%d, dial_rotated=%d, connector_det=%d\n",
+           g_axon_status_shared.coin_detected, g_axon_status_shared.solenoid_on,
+           g_axon_status_shared.dial_rotated, g_axon_status_shared.connector_det);
+    printf("[DEBUG_STATUS] Calculated STATUS=0x%04X (bit0-7: %d,%d,%d,%d,%d,%d,%d,%d)\n",
+           status,
+           (status >> 0) & 1, (status >> 1) & 1, (status >> 2) & 1, (status >> 3) & 1,
+           (status >> 4) & 1, (status >> 5) & 1, (status >> 6) & 1, (status >> 7) & 1);
+    NVIC_EnableIRQ(UART0_INT_IRQn);
     
     // MSN: AXON基板シリアル番号（6バイト）
     memcpy(atirq_plain.msn, axon_serial_number, 6);     // static const uint8_t axon_serial_number[6] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05};
@@ -860,21 +875,38 @@ bool axon_handle_setaxon(const uint8_t* encrypted_frame)
         return false;
     }
 
-    // 7. 設定処理
-    // SET_SOL (bit0: ソレノイド, bit4: 現金ブロック)
-    bool sol_on = (setaxon->set_sol & 0x01) != 0;
-    bool cash_block_on = (setaxon->set_sol & 0x10) != 0;
+    // 7. 設定処理 (Ver1.0)
+    // SET_PRTS (bit5: Dial Clear, bit4: Cash Block, bit3: Btn Reset, bit2: Sensor Reset)
+    uint8_t set_prts = setaxon->set_prts;
     
-    // ソレノイド制御（ダイヤルロック）
-    // 注: COIN_SOL_PORTが定義されている場合に有効化
-    #ifdef COIN_SOL_PORT
-    DL_GPIO_writePinsVal(COIN_SOL_PORT, COIN_SOL_PIN, 
-                         sol_on ? COIN_SOL_PIN : 0);
-    #endif
+    // bit5: ダイヤル回転検知（Latch）クリア
+    if (set_prts & S2A_SETAXON_PRTS_DIAL_CLEAR) {
+        extern volatile uint8_t g_dial_rotation_count;
+        printf("[SETAXON] bit5: Dial rotation Latch cleared (count=%u -> 0)\n", g_dial_rotation_count);
+        g_dial_rotation_count = 0;  // カウンタリセット
+        g_axon_status_shared.dial_rotated = 0;  // Latchクリア
+    }
     
-    // 現金ブロックソレノイド制御
-    DL_GPIO_writePinsVal(BLOCK_SOL_PORT, BLOCK_SOL_PIN, 
-                         cash_block_on ? BLOCK_SOL_PIN : 0);
+    // bit4: 現金ブロックソレノイド制御
+    if (set_prts & S2A_SETAXON_PRTS_CASH_BLOCK) {
+        printf("[SETAXON] bit4: Cash block enabled\n");
+        DL_GPIO_writePinsVal(BLOCK_SOL_PORT, BLOCK_SOL_PIN, BLOCK_SOL_PIN);
+    } else {
+        printf("[SETAXON] bit4: Cash block disabled\n");
+        DL_GPIO_writePinsVal(BLOCK_SOL_PORT, BLOCK_SOL_PIN, 0);
+    }
+    
+    // bit3: 現金返却ボタン（Latch）リセット
+    if (set_prts & S2A_SETAXON_PRTS_COIN_RETURN_RST) {
+        printf("[SETAXON] bit3: Return button Latch reset (escrow_detected -> 0)\n");
+        g_axon_status_shared.escrow_detected = 0;
+    }
+    
+    // bit2: 現金用 光センサー（Latch）リセット
+    if (set_prts & S2A_SETAXON_PRTS_COIN_SENSOR_RST) {
+        printf("[SETAXON] bit2: Coin sensor Latch reset (coin_detected -> 0)\n");
+        g_axon_status_shared.coin_detected = 0;
+    }
     
     // SET_LED (bit0-2: RGB, bit4-6: 動作モード)
     uint8_t led_r = (setaxon->set_led & 0x01) != 0;
@@ -1010,8 +1042,10 @@ bool axon_handle_setaxon(const uint8_t* encrypted_frame)
         g_axon_status_shared.face_number = g_right_amount;
     }
     g_axon_status_shared.cash_value = (uint16_t)g_left_amount;
-    g_axon_status_shared.solenoid_on = sol_on ? 1U : 0U;
-    g_axon_status_shared.block_solenoid_on = cash_block_on ? 1U : 0U;
+    // Ver1.0: solenoid_on, block_solenoid_onはSET_PRTSから設定済み（Line 872-875）
+    // ここでは改めて設定不要（既にGPIO制御済み）
+    g_axon_status_shared.solenoid_on = 0U;  // Ver1.0ではbit0廃止のため常に0
+    g_axon_status_shared.block_solenoid_on = (set_prts & S2A_SETAXON_PRTS_CASH_BLOCK) ? 1U : 0U;
     g_axon_status_shared.led_pattern = setaxon->set_led;
     
     // リセットフラグをクリア（SETAXONコマンド受信 = 正常動作中）

@@ -507,17 +507,19 @@ void SYSCFG_DL_GPIO_init(void) {
     DL_GPIO_clearInterruptStatus(CONNECTOR_DET_PORT, CONNECTOR_DET_PIN);
     DL_GPIO_enableInterrupt(CONNECTOR_DET_PORT, CONNECTOR_DET_PIN);
 
-    // block solenoid
+    // block solenoid (テスト基板: Low=点灯, High=消灯)
     DL_GPIO_initDigitalOutputFeatures(BLOCK_SOL_IOMUX, DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
-                                      DL_GPIO_DRIVE_STRENGTH_LOW, DL_GPIO_HIZ_DISABLE);
+                                      DL_GPIO_DRIVE_STRENGTH_HIGH, DL_GPIO_HIZ_DISABLE);
     DL_GPIO_enableOutput(BLOCK_SOL_PORT, BLOCK_SOL_PIN);
-    DL_GPIO_clearPins(BLOCK_SOL_PORT, BLOCK_SOL_PIN);
+    DL_GPIO_writePinsVal(BLOCK_SOL_PORT, BLOCK_SOL_PIN, BLOCK_SOL_PIN);  // High=消灯
 
-    // coin solenoid
+    // coin solenoid (テスト基板: Low=点灯, High=消灯)
+    // PA17: 緑LEDが微点灯するため、明示的にHigh固定を強化
     DL_GPIO_initDigitalOutputFeatures(COIN_SOL_IOMUX, DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
-                                      DL_GPIO_DRIVE_STRENGTH_LOW, DL_GPIO_HIZ_DISABLE);
+                                      DL_GPIO_DRIVE_STRENGTH_HIGH, DL_GPIO_HIZ_DISABLE);
     DL_GPIO_enableOutput(COIN_SOL_PORT, COIN_SOL_PIN);
-    DL_GPIO_clearPins(COIN_SOL_PORT, COIN_SOL_PIN);
+    DL_GPIO_setPins(COIN_SOL_PORT, COIN_SOL_PIN);  // High=消灯（setPinsで明示的にセット）
+    DL_GPIO_writePinsVal(COIN_SOL_PORT, COIN_SOL_PIN, COIN_SOL_PIN);  // 二重書き込みで確実にHigh
 
     // door open close detect
     DL_GPIO_initDigitalInputFeatures(DOOR_OC_DET_IOMUX, DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
