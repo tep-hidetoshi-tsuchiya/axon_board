@@ -279,6 +279,10 @@ static inline bool check_fw_version(uint8_t recv_min_version)
     return (current_minor >= required_minor);
 }
 
+// 前方宣言: 暗号化/復号化関数
+static bool aes_decrypt_ecb(const uint8_t* encrypted_data, uint8_t* decrypted_data);
+static bool aes_encrypt_ecb(const uint8_t* plaintext_data, uint8_t* encrypted_data);
+
 /**
  * @brief CHKIRQ受信時の処理（AXON側）
  * @details SOMAから暗号化CHKIRQコマンドを受信し、暗号化ATIRQ応答を返す
@@ -369,8 +373,17 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
         return false;
     }
 
-    // 4. 平文データ取得（暗号化なし）
-    uint8_t* decrypted_data = (uint8_t*)&encrypted_frame[2];
+    // 4. 暗号化データ復号化（AES-256/ECB）
+    uint8_t decrypted_data[32];
+    if (!aes_decrypt_ecb(&encrypted_frame[2], decrypted_data)) {
+        systick_t t = get_systick_count_ms();
+        uint32_t s = t / 1000;
+        NVIC_DisableIRQ(UART0_INT_IRQn);
+        printf("[%02lu:%02lu:%02lu.%03lu][CHKIRQ_HANDLER] ERROR: AES decryption failed\n",
+               (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000));
+        NVIC_EnableIRQ(UART0_INT_IRQn);
+        return false;
+    }
 
     // 5. コマンドID確認（CHKIRQ平文32バイト構造体で解釈）
     CHKIRQ_PLAIN32* chkirq_plain = (CHKIRQ_PLAIN32*)decrypted_data;
@@ -565,8 +578,16 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
     // 暗号化前のインジケータはログ化（赤LED点滅をログで代替）
     debug_led_event_count++;
 
-    // 平文データをそのままコピー（暗号化なし）
-    memcpy(&encrypted_packet[2], &atirq_plain, 32);
+    // 平文データを暗号化（AES-256/ECB）
+    if (!aes_encrypt_ecb((uint8_t*)&atirq_plain, &encrypted_packet[2])) {
+        systick_t t = get_systick_count_ms();
+        uint32_t s = t / 1000;
+        NVIC_DisableIRQ(UART0_INT_IRQn);
+        printf("[%02lu:%02lu:%02lu.%03lu][ATIRQ] ERROR: AES encryption failed\n",
+               (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000));
+        NVIC_EnableIRQ(UART0_INT_IRQn);
+        return false;
+    }
 
     // ★仕様書準拠: Data部のみ（32バイト）をCRC計算
     uint16_t crc = crc16_tep(&encrypted_packet[2], 32);  // Data部のみ（Byte[2-33]）

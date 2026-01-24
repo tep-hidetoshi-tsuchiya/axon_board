@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "CCS Build - AXON Board (Encrypted)",
+			"type": "shell",
+			"command": "cd Debug && C:/ti/ccs2030/ccs/utils/bin/gmake all -j8",
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}
