@@ -584,16 +584,16 @@ void axon_routine_main(void* args) {
     _change_status(&g_axon_state, STATE_NOTIFY);
     DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, UART_IRQ_OUT_PIN);
 
-    // 起動直後にSOMAへ通知するためIRQ_NをLowに落とす（CHKIRQ受信でHighへ戻す）
+    // 起動直後にSOMAへ通知するためIRQ_NをHighに設定
     {
         systick_t init_time = get_systick_count_ms();
         uint32_t  init_sec  = init_time / 1000U;
-        printf("[%02u:%02u:%02u.%03u][IRQ_SIGNAL] High -> Low (boot notify)\n",
+        printf("[%02u:%02u:%02u.%03u][IRQ_SIGNAL] High (boot notify)\n",
                (unsigned int)((init_sec / 3600U) % 24U),
                (unsigned int)((init_sec / 60U) % 60U),
                (unsigned int)(init_sec % 60U),
                (unsigned int)(init_time % 1000U));
-        DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, 0);  // IRQ_N = Low (Active)
+        DL_GPIO_writePinsVal(UART_PORT, UART_IRQ_OUT_PIN, UART_IRQ_OUT_PIN);  // IRQ_N = High
     }
 
     // ATIRQ送信用の一時変数を現在値で初期化（起動時）
