@@ -1278,16 +1278,19 @@ bool axon_handle_setokey(const uint8_t* frame)
         return false;
     }
 
-    // CHALLENGE送信（Header=0x11, LEN=0x20, Data=challenge_encrypted[32]）
-    // ※ CRC16 は付加しない（仕様書: CHALLENGE には CRC16 は存在しない）
-    // フレーム: [1] + [1] + [32] = 34 bytes
-    uint8_t challenge_frame[34];
+    // CHALLENGE送信（Header=0x11, LEN=0x20, Data=challenge_encrypted[32], CRC16[2]）
+    // フレーム: [1] + [1] + [32] + [2] = 36 bytes
+    uint8_t challenge_frame[36];
     challenge_frame[0] = 0x11;  // Header
     challenge_frame[1] = 0x20;  // LEN (32 bytes)
     memcpy(&challenge_frame[2], challenge_encrypted, 32);
+    // ★仕様書準拠: Data部のみ（32バイト）をCRC16計算
+    uint16_t challenge_crc = crc16_tep(&challenge_frame[2], 32);  // Data部のみ（Byte[2-33]）
+    challenge_frame[34] = (uint8_t)(challenge_crc & 0xFF);         // LSB
+    challenge_frame[35] = (uint8_t)((challenge_crc >> 8) & 0xFF);  // MSB
 
     // UARTで送信（uart_send_packet_fastを使用）
-    if (!uart_send_packet_fast(challenge_frame, 34)) {
+    if (!uart_send_packet_fast(challenge_frame, 36)) {
         send_nack_frame(0x0A);  // CHALLENGE送信エラー
         clear_irq_signal();
         return false;
@@ -1341,7 +1344,16 @@ bool axon_handle_response(const uint8_t* frame)
         return false;
     }
 
-    // CRC検証は行わない（仕様書: RESPONSE には CRC16 は存在しない）
+    // CRC16検証（暗号文に対して）
+    // ★仕様書準拠: Data部のみ（32バイト）を計算対象とする
+    uint16_t crc_recv = frame[34] | (frame[35] << 8);
+    uint16_t crc_calc = crc16_tep(&frame[2], 32);  // Data部のみ（Byte[2-33]）
+    if (crc_recv != crc_calc) {
+        send_nack_frame(0x04);  // CRC NG
+        g_waiting_for_response = false;
+        clear_irq_signal();
+        return false;
+    }
 
     // (7) RESPONSEデータ部を新運用鍵で復号
     if (aes256_init(&ctx, g_new_operation_key) != AES256_SUCCESS) {
