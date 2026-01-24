@@ -1278,10 +1278,10 @@ bool axon_handle_setokey(const uint8_t* frame)
         return false;
     }
 
-    // CHALLENGE送信（Header=0x11, LEN=0x20, Data=challenge_encrypted[32], CRC16[2]）
+    // CHALLENGE送信（Header=0x15, LEN=0x20, Data=challenge_encrypted[32], CRC16[2]）
     // フレーム: [1] + [1] + [32] + [2] = 36 bytes
     uint8_t challenge_frame[36];
-    challenge_frame[0] = 0x11;  // Header
+    challenge_frame[0] = 0x15;  // Header
     challenge_frame[1] = 0x20;  // LEN (32 bytes)
     memcpy(&challenge_frame[2], challenge_encrypted, 32);
     // ★仕様書準拠: Data部のみ（32バイト）をCRC16計算
@@ -1328,8 +1328,8 @@ bool axon_handle_response(const uint8_t* frame)
     uint8_t response_decrypted[32];
 
     // [Phase 3] RESPONSE 受信（新運用鍵）
-    // (6) Header確認（0x11）
-    if (frame[0] != 0x11) {
+    // (6) Header確認（0x15）
+    if (frame[0] != 0x15) {
         send_nack_frame(0x11);  // Header不正
         g_waiting_for_response = false;
         clear_irq_signal();
