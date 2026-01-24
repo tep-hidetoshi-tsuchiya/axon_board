@@ -1,0 +1,5 @@
+# FIXED
+
+driver/utils/RingBuf.o: ../driver/utils/RingBuf.c \
+ ../driver/utils/RingBuf.h
+../driver/utils/RingBuf.h:

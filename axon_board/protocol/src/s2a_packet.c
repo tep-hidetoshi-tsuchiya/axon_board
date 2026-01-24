@@ -230,10 +230,20 @@ static const uint8_t SETTING_AES_KEY[32] = {
 static uint8_t g_operation_key[32] = {0};
 static bool g_operation_key_init = false;
 
+// KEY_MODE: 鍵の切り替え管理（SETOKEY完了で変更）
+typedef enum {
+    KEY_MODE_SETTING = 0,    // 設定鍵を使用
+    KEY_MODE_OPERATION = 1   // 運用鍵を使用
+} KEY_MODE_TYPE;
+static KEY_MODE_TYPE g_key_mode = KEY_MODE_SETTING;  // 初期値は設定鍵
+
 // CHALLENGE/RESPONSE用の一時保存
 static uint8_t g_challenge_random[32] = {0};
 static bool g_waiting_for_response = false;
 static uint32_t g_response_timeout_ms = 0;
+
+// 新運用鍵の一時保存（SETOKEY受信時に設定、RESPONSE検証後に正式採用）
+static uint8_t g_new_operation_key[32] = {0};
 
 // 注: ECBモードではIVは使用しないが、将来の拡張のため定義を残す
 static const uint8_t aes_iv[16] = {
@@ -641,7 +651,10 @@ bool axon_handle_chkirq(const uint8_t* encrypted_frame)
 // ============================================================
 
 /**
- * @brief AES-256-ECB復号
+ * @brief AES-256-ECB復号（KEY_MODEに基づいて鍵を選択）
+ * @details
+ *   - KEY_MODE_SETTING: 設定鍵で復号
+ *   - KEY_MODE_OPERATION: 運用鍵で復号
  * @param encrypted_data 暗号化データ（32バイト）
  * @param decrypted_data 復号データ（32バイト）
  * @return true: 成功, false: 失敗
@@ -651,7 +664,11 @@ static bool aes_decrypt_ecb(const uint8_t* encrypted_data, uint8_t* decrypted_da
     if (!encrypted_data || !decrypted_data) return false;
 
     aes256_ctx_t ctx;
-    if (aes256_init(&ctx, g_operation_key) != AES256_SUCCESS) {
+    
+    // KEY_MODEに基づいて鍵を選択
+    const uint8_t* key = (g_key_mode == KEY_MODE_OPERATION) ? g_operation_key : SETTING_AES_KEY;
+    
+    if (aes256_init(&ctx, key) != AES256_SUCCESS) {
         return false;
     }
     
@@ -663,7 +680,10 @@ static bool aes_decrypt_ecb(const uint8_t* encrypted_data, uint8_t* decrypted_da
 }
 
 /**
- * @brief AES-256-ECB暗号化
+ * @brief AES-256-ECB暗号化（KEY_MODEに基づいて鍵を選択）
+ * @details
+ *   - KEY_MODE_SETTING: 設定鍵で暗号化
+ *   - KEY_MODE_OPERATION: 運用鍵で暗号化
  * @param plaintext_data 平文データ（32バイト）
  * @param encrypted_data 暗号化データ（32バイト）
  * @return true: 成功, false: 失敗
@@ -673,7 +693,11 @@ static bool aes_encrypt_ecb(const uint8_t* plaintext_data, uint8_t* encrypted_da
     if (!plaintext_data || !encrypted_data) return false;
 
     aes256_ctx_t ctx;
-    if (aes256_init(&ctx, g_operation_key) != AES256_SUCCESS) {
+    
+    // KEY_MODEに基づいて鍵を選択
+    const uint8_t* key = (g_key_mode == KEY_MODE_OPERATION) ? g_operation_key : SETTING_AES_KEY;
+    
+    if (aes256_init(&ctx, key) != AES256_SUCCESS) {
         return false;
     }
     
@@ -1195,60 +1219,52 @@ static uint16_t crc16_calculate(const uint8_t* data, size_t len)
 bool axon_handle_setokey(const uint8_t* frame)
 {
     if (frame == NULL) {
+        send_nack_frame(0x02);  // データ内容エラー
+        clear_irq_signal();
         return false;
     }
 
-    uint8_t new_operation_key[32];
     aes256_ctx_t ctx;
 
-    // 1. Header確認（仕様書: 0x15）
+    // [Phase 1] SETOKEY 受信（設定鍵）
+    // (1) Header確認（仕様書: 0x15）
     if (frame[0] != 0x15) {
         send_nack_frame(0x02);  // データ内容エラー
         clear_irq_signal();
         return false;
     }
     
-    // 2. LEN確認（仕様書: 0x20 = 32バイト）
+    // (2) LEN確認（仕様書: 0x20 = 32バイト）
     if (frame[1] != 0x20) {
         send_nack_frame(0x03);  // 長さエラー
         clear_irq_signal();
         return false;
     }
 
-    // 3. CRC16検証（Data部: frame[2..33]の32バイト）
-    uint16_t crc_recv = frame[34] | (frame[35] << 8);
-    uint16_t crc_calc = crc16_calculate(&frame[2], 32);
-    if (crc_recv != crc_calc) {
-        send_nack_frame(0x04);  // CRC16エラー
-        clear_irq_signal();
-        return false;
-    }
-
-    // 4. 設定鍵でOKEY(32byte)をAES-256 ECB 復号
+    // (3) CRC検証は行わない（仕様書: SETOKEY には CRC16 は存在しない）
+    
+    // (4) 設定鍵で OKEY(32byte) をAES-256 ECB 復号
     if (aes256_init(&ctx, SETTING_AES_KEY) != AES256_SUCCESS) {
         send_nack_frame(0x05);  // 復号初期化エラー
         clear_irq_signal();
         return false;
     }
 
-    if (aes256_decrypt_ecb(&ctx, &frame[2], new_operation_key, 32) != AES256_SUCCESS) {
+    if (aes256_decrypt_ecb(&ctx, &frame[2], g_new_operation_key, 32) != AES256_SUCCESS) {
         send_nack_frame(0x06);  // 復号エラー
         clear_irq_signal();
         return false;
     }
 
-    // 5. 復号結果を新運用鍵として一時保存
-    memcpy(g_operation_key, new_operation_key, 32);
-
-    // 6. CHALLENGE/RESPONSEシーケンス開始
-    // 6.1 32byte乱数生成
+    // [Phase 2] CHALLENGE 送信（設定鍵）
+    // (5) AXON が 32バイト乱数を生成
     if (!generate_random32(g_challenge_random)) {
         send_nack_frame(0x07);  // 乱数生成エラー
         clear_irq_signal();
         return false;
     }
 
-    // 6.2 CHALLENGEパケット送信（乱数を設定鍵で暗号化）
+    // (6) 設定鍵で乱数を AES-256-ECB 暗号化
     uint8_t challenge_encrypted[32];
     if (aes256_init(&ctx, SETTING_AES_KEY) != AES256_SUCCESS) {
         send_nack_frame(0x08);  // 暗号化初期化エラー
@@ -1262,35 +1278,40 @@ bool axon_handle_setokey(const uint8_t* frame)
         return false;
     }
 
-    // CHALLENGE送信（Header=0x11, LEN=0x20, Data=challenge_encrypted[32], CRC16[2]）
-    // フレーム: [1] + [1] + [32] + [2] = 36 bytes
-    uint8_t challenge_frame[36];
+    // CHALLENGE送信（Header=0x11, LEN=0x20, Data=challenge_encrypted[32]）
+    // ※ CRC16 は付加しない（仕様書: CHALLENGE には CRC16 は存在しない）
+    // フレーム: [1] + [1] + [32] = 34 bytes
+    uint8_t challenge_frame[34];
     challenge_frame[0] = 0x11;  // Header
     challenge_frame[1] = 0x20;  // LEN (32 bytes)
     memcpy(&challenge_frame[2], challenge_encrypted, 32);
-    uint16_t challenge_crc = crc16_calculate(&challenge_frame[2], 32);
-    challenge_frame[34] = challenge_crc & 0xFF;
-    challenge_frame[35] = (challenge_crc >> 8) & 0xFF;
 
     // UARTで送信（uart_send_packet_fastを使用）
-    if (!uart_send_packet_fast(challenge_frame, 36)) {
+    if (!uart_send_packet_fast(challenge_frame, 34)) {
         send_nack_frame(0x0A);  // CHALLENGE送信エラー
         clear_irq_signal();
         return false;
     }
 
-    // 6.3 RESPONSEパケット受信待機開始（3秒タイムアウト）
+    // [Phase 3] RESPONSE 受信待機開始（3秒タイムアウト）
     g_waiting_for_response = true;
     g_response_timeout_ms = 3000;  // 3秒
 
-    // 7. 結果は axon_handle_response() で処理
-    //   - Response受信 → 乱数検証 → 新運用鍵採用 or NACK
+    // ログ出力: SETOKEY 開始（鍵値なし）
+    systick_t t = get_systick_count_ms();
+    uint32_t s = t / 1000;
+    NVIC_DisableIRQ(UART0_INT_IRQn);
+    printf("[%02lu:%02lu:%02lu.%03lu][SETOKEY] Challenge sent, waiting for RESPONSE\n",
+           (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000));
+    NVIC_EnableIRQ(UART0_INT_IRQn);
 
+    // 結果は axon_handle_response() で処理
     return true;  // CHALLENGE送信成功
 }
 
 /**
  * @brief RESPONSE受信時の処理（AXON側、CHALLENGE/RESPONSE内）
+ * @details SOMA側から返された乱数を検証し、鍵交換が成功したかを判定する
  */
 bool axon_handle_response(const uint8_t* frame)
 {
@@ -1303,7 +1324,8 @@ bool axon_handle_response(const uint8_t* frame)
     aes256_ctx_t ctx;
     uint8_t response_decrypted[32];
 
-    // 1. Header確認（0x11）
+    // [Phase 3] RESPONSE 受信（新運用鍵）
+    // (6) Header確認（0x11）
     if (frame[0] != 0x11) {
         send_nack_frame(0x11);  // Header不正
         g_waiting_for_response = false;
@@ -1311,7 +1333,7 @@ bool axon_handle_response(const uint8_t* frame)
         return false;
     }
 
-    // 2. LEN確認（0x20）
+    // LEN確認（0x20）
     if (frame[1] != 0x20) {
         send_nack_frame(0x12);  // LEN不正
         g_waiting_for_response = false;
@@ -1319,18 +1341,10 @@ bool axon_handle_response(const uint8_t* frame)
         return false;
     }
 
-    // 3. CRC16検証（暗号文に対して）
-    uint16_t crc_recv = frame[34] | (frame[35] << 8);
-    uint16_t crc_calc = crc16_calculate(&frame[2], 32);
-    if (crc_recv != crc_calc) {
-        send_nack_frame(0x04);  // CRC NG
-        g_waiting_for_response = false;
-        clear_irq_signal();
-        return false;
-    }
+    // CRC検証は行わない（仕様書: RESPONSE には CRC16 は存在しない）
 
-    // 4. RESPONSEデータ部を新運用鍵で復号
-    if (aes256_init(&ctx, g_operation_key) != AES256_SUCCESS) {
+    // (7) RESPONSEデータ部を新運用鍵で復号
+    if (aes256_init(&ctx, g_new_operation_key) != AES256_SUCCESS) {
         send_nack_frame(0x13);  // 復号初期化エラー
         g_waiting_for_response = false;
         clear_irq_signal();
@@ -1344,24 +1358,54 @@ bool axon_handle_response(const uint8_t* frame)
         return false;
     }
 
-    // 5. 乱数一致確認
+    // [Phase 4] 完了判定
+    // (8) 復号結果と CHALLENGE 乱数を比較
     if (memcmp(g_challenge_random, response_decrypted, 32) != 0) {
+        // 乱数不一致 → SETOKEY 失敗
         send_nack_frame(0x15);  // 乱数不一致
         g_waiting_for_response = false;
-        // 運用鍵をリセット
-        memset(g_operation_key, 0, 32);
+        // 新運用鍵をリセット（採用しない）
+        memset(g_new_operation_key, 0, 32);
         clear_irq_signal();
+        
+        // ログ出力: SETOKEY 失敗（鍵値なし）
+        systick_t t = get_systick_count_ms();
+        uint32_t s = t / 1000;
+        NVIC_DisableIRQ(UART0_INT_IRQn);
+        printf("[%02lu:%02lu:%02lu.%03lu][SETOKEY] FAILED (random mismatch)\n",
+               (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000));
+        NVIC_EnableIRQ(UART0_INT_IRQn);
+        
         return false;
     }
 
-    // 6. 乱数一致 → 新運用鍵を正式採用
+    // 乱数一致 → SETOKEY 成功
+    // (9) ACK応答送信
     g_waiting_for_response = false;
-
-    // 7. ACK応答送信
     bool ack_result = send_ack_frame();
+    
     if (ack_result) {
+        // (10) 成功時のみ KEY_MODE を運用鍵へ切替
+        memcpy(g_operation_key, g_new_operation_key, 32);
+        g_key_mode = KEY_MODE_OPERATION;
+        
+        // ログ出力: KEY_MODE 切替（鍵値なし）
+        systick_t t = get_systick_count_ms();
+        uint32_t s = t / 1000;
+        NVIC_DisableIRQ(UART0_INT_IRQn);
+        printf("[%02lu:%02lu:%02lu.%03lu][KEY_MODE] Switched to OPERATION\n",
+               (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000));
+        printf("[%02lu:%02lu:%02lu.%03lu][SETOKEY] SUCCESS\n",
+               (s/3600)%24, (s/60)%60, s%60, (unsigned long)(t%1000));
+        NVIC_EnableIRQ(UART0_INT_IRQn);
+        
+        clear_irq_signal();
+    } else {
+        // ACK送信失敗時も KEY_MODE 切り替えない
+        memset(g_new_operation_key, 0, 32);
         clear_irq_signal();
     }
+    
     return ack_result;
 }
 

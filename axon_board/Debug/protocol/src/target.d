@@ -1,0 +1,4 @@
+# FIXED
+
+protocol/src/target.o: ../protocol/src/target.c ../protocol/src/target.h
+../protocol/src/target.h:
