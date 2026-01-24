@@ -24,6 +24,7 @@ ORDERED_OBJS += \
 "./driver/utils/List.o" \
 "./driver/utils/RingBuf.o" \
 "./driver/utils/StructRingBuf.o" \
+"./driver/utils/aes256.o" \
 "./peripheral/fram_memory_map.o" \
 "./peripheral/msp_peripheral_config.o" \
 "./protcol/src/s2a_client.o" \

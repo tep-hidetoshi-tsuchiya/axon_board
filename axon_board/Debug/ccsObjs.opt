@@ -16,6 +16,7 @@
 "./driver/utils/List.o"
 "./driver/utils/RingBuf.o"
 "./driver/utils/StructRingBuf.o"
+"./driver/utils/aes256.o"
 "./peripheral/msp_peripheral_config.o"
 "./protocol/src/s2a_client.o"
 "./protocol/src/s2a_packet.o"

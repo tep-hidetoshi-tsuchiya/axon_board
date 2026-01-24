@@ -1048,7 +1048,7 @@ void axon_routine_main(void* args) {
         }
         
         // ==========================================
-        // 可変長フレーム受信処理（SETOKEY/CODEPKT/ERRCHK）
+        // 可変長フレーム受信処理（SETOKEY/RESPONSE/CODEPKT/ERRCHK）
         // ==========================================
         extern volatile uint8_t rx_variable_ready;
         extern volatile uint8_t rx_variable_length;
@@ -1059,11 +1059,17 @@ void axon_routine_main(void* args) {
             uint8_t length = rx_variable_frame[1];
             bool handled = false;
             
-            if (header == 0x15 && length == 0x10 && rx_variable_length == 18) {
-                // 18バイトフレーム - SETOKEY（運用鍵設定、仕様書Table 4-20準拠）
+            if (header == 0x15 && length == 0x20 && rx_variable_length == 36) {
+                // 36バイトフレーム - SETOKEY（運用鍵設定、AES-256 32バイト対応）
                 handled = axon_handle_setokey(rx_variable_frame);
                 if (handled) {
-                    // 運用鍵設定成功
+                    // SETOKEY処理成功、CHALLENGE送信待機中
+                }
+            } else if (header == 0x11 && length == 0x20 && rx_variable_length == 36) {
+                // 36バイトフレーム - RESPONSE（CHALLENGE/RESPONSE用）
+                handled = axon_handle_response(rx_variable_frame);
+                if (handled) {
+                    // RESPONSE検証成功、新運用鍵を正式採用
                 }
             } else if (header == 0xA5 && length == 0x24 && rx_variable_length == 40) {
                 // 40バイトフレーム - CODEPKT（FWコードパケット）

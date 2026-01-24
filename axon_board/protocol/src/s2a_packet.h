@@ -402,11 +402,19 @@ bool axon_handle_nop(const uint8_t* encrypted_frame);
 
 /**
  * @brief SETOKEY受信時の処理（AXON側）
- * @details SOMAからSETOKEYコマンドを受信し、運用鍵を設定してACK/NACK応答を返す
- * @param frame 受信したフレーム（20バイト: Header[1] + LEN[1] + Key[16] + CRC[2]）
+ * @details SOMAからSETOKEYコマンドを受信し、運用鍵を設定して CHALLENGE/RESPONSE でACK/NACK応答を返す
+ * @param frame 受信したフレーム（36バイト: Header[1] + LEN[1] + OKEY[32] + CRC16[2]）
  * @return true: 成功, false: 失敗
  */
 bool axon_handle_setokey(const uint8_t* frame);
+
+/**
+ * @brief RESPONSE受信時の処理（AXON側、CHALLENGE/RESPONSE内）
+ * @details CHALLENGEパケット送信後に受信するRESPONSEパケットを検証
+ * @param frame 受信したフレーム（34バイト: Header[1] + LEN[1] + Data[32] + CRC16[2]）
+ * @return true: 成功, false: 失敗
+ */
+bool axon_handle_response(const uint8_t* frame);
 
 /**
  * @brief AFWUP受信時の処理（AXON側）

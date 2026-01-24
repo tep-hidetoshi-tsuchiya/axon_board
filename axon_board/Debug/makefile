@@ -28,6 +28,7 @@ ORDERED_OBJS += \
 "./driver/utils/List.o" \
 "./driver/utils/RingBuf.o" \
 "./driver/utils/StructRingBuf.o" \
+"./driver/utils/aes256.o" \
 "./peripheral/msp_peripheral_config.o" \
 "./protocol/src/s2a_client.o" \
 "./protocol/src/s2a_packet.o" \
@@ -176,8 +177,8 @@ axon_board.out: $(OBJS) $(GEN_CMDS)
 # Other Targets
 clean:
 	-$(RM) $(GEN_MISC_FILES__QUOTED)$(GEN_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "axon_phase2_autotest.o" "axon_phase2_verification.o" "axon_routine.o" "driver_config.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "isr.o" "main.o" "soma_axon_comm_test.o" "soma_uart_test.o" "test_commands.o" "uart_packet.o" "driver\UART.o" "driver\dma\DMAMSPM0.o" "driver\uart\UARTMSPM0.o" "driver\utils\List.o" "driver\utils\RingBuf.o" "driver\utils\StructRingBuf.o" "peripheral\msp_peripheral_config.o" "protocol\src\s2a_client.o" "protocol\src\s2a_packet.o" "protocol\src\target.o" 
-	-$(RM) "axon_phase2_autotest.d" "axon_phase2_verification.d" "axon_routine.d" "driver_config.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "isr.d" "main.d" "soma_axon_comm_test.d" "soma_uart_test.d" "startup_mspm0g350x_ticlang.d" "test_commands.d" "ti_msp_dl_config.d" "uart_packet.d" "driver\UART.d" "driver\dma\DMAMSPM0.d" "driver\uart\UARTMSPM0.d" "driver\utils\List.d" "driver\utils\RingBuf.d" "driver\utils\StructRingBuf.d" "peripheral\msp_peripheral_config.d" "protocol\src\s2a_client.d" "protocol\src\s2a_packet.d" "protocol\src\target.d" 
+	-$(RM) "axon_phase2_autotest.o" "axon_phase2_verification.o" "axon_routine.o" "driver_config.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "isr.o" "main.o" "soma_axon_comm_test.o" "soma_uart_test.o" "test_commands.o" "uart_packet.o" "driver\UART.o" "driver\dma\DMAMSPM0.o" "driver\uart\UARTMSPM0.o" "driver\utils\List.o" "driver\utils\RingBuf.o" "driver\utils\StructRingBuf.o" "driver\utils\aes256.o" "peripheral\msp_peripheral_config.o" "protocol\src\s2a_client.o" "protocol\src\s2a_packet.o" "protocol\src\target.o" 
+	-$(RM) "axon_phase2_autotest.d" "axon_phase2_verification.d" "axon_routine.d" "driver_config.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "isr.d" "main.d" "soma_axon_comm_test.d" "soma_uart_test.d" "startup_mspm0g350x_ticlang.d" "test_commands.d" "ti_msp_dl_config.d" "uart_packet.d" "driver\UART.d" "driver\dma\DMAMSPM0.d" "driver\uart\UARTMSPM0.d" "driver\utils\List.d" "driver\utils\RingBuf.d" "driver\utils\StructRingBuf.d" "driver\utils\aes256.d" "peripheral\msp_peripheral_config.d" "protocol\src\s2a_client.d" "protocol\src\s2a_packet.d" "protocol\src\target.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 
